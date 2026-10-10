@@ -12,6 +12,12 @@ using UnityEngine.Rendering;
 ///   Jump  : Espace / A (Croix)
 ///   Crouch: C / B (Rond)
 ///   Sprint: Shift gauche / L3
+<<<<<<< Updated upstream
+=======
+///   ToggleView : V / R3        (1re ⇄ 3e personne)
+///   Pause      : Échap / Start (menu Paramètres, géré par SettingsMenu)
+///   Flashlight : F / croix haut (lampe torche, gérée par PlayerFlashlight)
+>>>>>>> Stashed changes
 ///
 /// Menu "AAR > Créer le joueur dans la scène" pour tout monter automatiquement.
 /// </summary>
@@ -72,7 +78,14 @@ public class PlayerController : MonoBehaviour
     // Entrées
     private InputActionMap playerMap;
     private InputAction moveAction, lookAction, jumpAction, crouchAction, sprintAction;
+<<<<<<< Updated upstream
     private bool ownsActions; // vrai si les actions ont été créées par code (pas d'asset)
+=======
+    private InputAction toggleViewAction, pauseAction, flashlightAction;
+    private bool ownsActions;       // vrai si la map a été créée par code (pas d'asset)
+    private InputActionMap extraMap; // ToggleView/Pause créées par code si absentes de l'asset
+    private bool inputEnabled = true;
+>>>>>>> Stashed changes
 
     // État
     private CharacterController controller;
@@ -93,6 +106,42 @@ public class PlayerController : MonoBehaviour
     public Vector3 Velocity => controller.velocity;
     public ViewMode CurrentViewMode => viewMode;
 
+<<<<<<< Updated upstream
+=======
+    // ---------- Accès pour le menu Paramètres ----------
+    public InputActionMap PlayerMap => playerMap;
+    public InputAction PauseAction => pauseAction;
+    public InputAction FlashlightAction => flashlightAction;
+    public Transform CameraPivot => cameraPivot;
+    public bool InputEnabled => inputEnabled;
+
+    public float MouseSensitivity
+    {
+        get => mouseSensitivity;
+        set { mouseSensitivity = value; GameSettings.SetFloat("MouseSensitivity", value); }
+    }
+    public float GamepadSensitivity
+    {
+        get => gamepadSensitivity;
+        set { gamepadSensitivity = value; GameSettings.SetFloat("GamepadSensitivity", value); }
+    }
+    public bool InvertY
+    {
+        get => invertY;
+        set { invertY = value; GameSettings.SetBool("InvertY", value); }
+    }
+    public bool CrouchToggle
+    {
+        get => crouchToggle;
+        set { crouchToggle = value; wantsCrouch = false; GameSettings.SetBool("CrouchToggle", value); }
+    }
+    public float FieldOfView
+    {
+        get => playerCamera != null ? playerCamera.fieldOfView : 60f;
+        set { if (playerCamera != null) playerCamera.fieldOfView = value; GameSettings.SetFloat("FieldOfView", value); }
+    }
+
+>>>>>>> Stashed changes
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
@@ -118,6 +167,25 @@ public class PlayerController : MonoBehaviour
         yaw = transform.eulerAngles.y;
         SetupInput();
         ApplyViewMode();
+<<<<<<< Updated upstream
+=======
+
+        // Menu Paramètres (Échap), lampe torche (F) et brouillard, créés automatiquement s'ils manquent
+        SettingsMenu.Ensure(this);
+        if (!TryGetComponent(out PlayerFlashlight _)) gameObject.AddComponent<PlayerFlashlight>();
+        AtmosphereFog.Ensure();
+    }
+
+    private void LoadSettings()
+    {
+        mouseSensitivity = GameSettings.GetFloat("MouseSensitivity", mouseSensitivity);
+        gamepadSensitivity = GameSettings.GetFloat("GamepadSensitivity", gamepadSensitivity);
+        invertY = GameSettings.GetBool("InvertY", invertY);
+        crouchToggle = GameSettings.GetBool("CrouchToggle", crouchToggle);
+        viewMode = (ViewMode)GameSettings.GetInt("ViewMode", (int)viewMode);
+        if (playerCamera != null)
+            playerCamera.fieldOfView = GameSettings.GetFloat("FieldOfView", playerCamera.fieldOfView);
+>>>>>>> Stashed changes
     }
 
     // ---------- Entrées ----------
@@ -133,6 +201,12 @@ public class PlayerController : MonoBehaviour
                 jumpAction = playerMap.FindAction("Jump");
                 crouchAction = playerMap.FindAction("Crouch");
                 sprintAction = playerMap.FindAction("Sprint");
+<<<<<<< Updated upstream
+=======
+                toggleViewAction = playerMap.FindAction("ToggleView");
+                pauseAction = playerMap.FindAction("Pause");
+                flashlightAction = playerMap.FindAction("Flashlight");
+>>>>>>> Stashed changes
             }
         }
 
@@ -169,6 +243,48 @@ public class PlayerController : MonoBehaviour
         sprintAction = playerMap.AddAction("Sprint", InputActionType.Button);
         sprintAction.AddBinding("<Keyboard>/leftShift");
         sprintAction.AddBinding("<Gamepad>/leftStickPress");
+<<<<<<< Updated upstream
+=======
+
+        toggleViewAction = playerMap.AddAction("ToggleView", InputActionType.Button);
+        toggleViewAction.AddBinding("<Keyboard>/v").WithGroup("Keyboard&Mouse");
+        toggleViewAction.AddBinding("<Gamepad>/rightStickPress").WithGroup("Gamepad");
+
+        pauseAction = playerMap.AddAction("Pause", InputActionType.Button);
+        pauseAction.AddBinding("<Keyboard>/escape").WithGroup("Keyboard&Mouse");
+        pauseAction.AddBinding("<Gamepad>/start").WithGroup("Gamepad");
+
+        flashlightAction = playerMap.AddAction("Flashlight", InputActionType.Button);
+        flashlightAction.AddBinding("<Keyboard>/f").WithGroup("Keyboard&Mouse");
+        flashlightAction.AddBinding("<Gamepad>/dpad/up").WithGroup("Gamepad");
+
+        GameSettings.LoadBindings(playerMap);
+    }
+
+    // Si l'asset d'un coéquipier n'a pas encore ToggleView / Pause
+    private void CreateMissingExtraActions()
+    {
+        if (toggleViewAction != null && pauseAction != null && flashlightAction != null) return;
+        extraMap = new InputActionMap("PlayerExtra");
+        if (toggleViewAction == null)
+        {
+            toggleViewAction = extraMap.AddAction("ToggleView", InputActionType.Button);
+            toggleViewAction.AddBinding("<Keyboard>/v");
+            toggleViewAction.AddBinding("<Gamepad>/rightStickPress");
+        }
+        if (pauseAction == null)
+        {
+            pauseAction = extraMap.AddAction("Pause", InputActionType.Button);
+            pauseAction.AddBinding("<Keyboard>/escape");
+            pauseAction.AddBinding("<Gamepad>/start");
+        }
+        if (flashlightAction == null)
+        {
+            flashlightAction = extraMap.AddAction("Flashlight", InputActionType.Button);
+            flashlightAction.AddBinding("<Keyboard>/f");
+            flashlightAction.AddBinding("<Gamepad>/dpad/up");
+        }
+>>>>>>> Stashed changes
     }
 
     private void OnEnable()

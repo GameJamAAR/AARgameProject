@@ -28,9 +28,15 @@ namespace AAR.PCB
         [Tooltip("Require a separate routed connection from every modeled IC pin.")]
         public bool globalConnectAllChipPins = true;
         [Tooltip("Copper layers available for dense circuits; top stays visible, other layers connect through vias.")]
-        [Range(2,8)] public int globalRoutingLayers = 4;
+        [Range(2,8)] public int globalRoutingLayers = 8;
         [Range(2,8)] public int globalCapacitorsPerGroup = 5;
         [Range(2,8)] public int globalResistorBankSize = 4;
+        [Tooltip("Fill remaining board-wide gaps with connected, low-profile SMD banks. Zero disables gap filling.")]
+        [Range(0,1)] public float globalGapFillDensity = .7f;
+        [Tooltip("Footprint scale of the small gap-filling resistors and ceramic capacitors.")]
+        [Range(.15f,.6f)] public float globalGapComponentSize = .36f;
+        [Tooltip("Height of gap-filling SMD parts; does not change imported capacitors or RAM.")]
+        [Range(.02f,.3f)] public float globalGapComponentHeight = .10f;
         [Range(.04f,.3f)] public float globalTraceWidth = .10f;
         [Range(.02f,.2f)] public float globalTrackClearance = .055f;
         [Range(0,24)] public int globalSignalsPerChip = 12;

@@ -29,7 +29,7 @@ namespace AAR.PCB
                 else {obj=new GameObject("Group "+part.group+" Component");obj.transform.SetParent(parts,false);
                     var localSize=part.quarterTurn%2==0?part.size:new Vector2(part.size.y,part.size.x);
                     Primitive(obj.transform,part.family==1?PrimitiveType.Cylinder:PrimitiveType.Cube,Vector3.up*(part.height*.5f),new Vector3(localSize.x,part.family==1?part.height*.5f:part.height,localSize.y),body);
-                    if(part.family==3)for(int end=-1;end<=1;end+=2)Primitive(obj.transform,PrimitiveType.Cube,new Vector3(0,part.height*.35f,end*localSize.y*.38f),new Vector3(localSize.x*1.08f,part.height*.7f,localSize.y*.24f),contacts);
+                    if(part.family>=3)for(int end=-1;end<=1;end+=2)Primitive(obj.transform,PrimitiveType.Cube,new Vector3(0,part.height*.35f,end*localSize.y*.38f),new Vector3(localSize.x*1.08f,part.height*.7f,localSize.y*.24f),contacts);
                 }
                 obj.transform.localPosition=new Vector3(part.position.x,mount+(part.family==2?.10f:0),part.position.y);
                 obj.transform.localRotation=Quaternion.Euler(0,part.quarterTurn*90,0);

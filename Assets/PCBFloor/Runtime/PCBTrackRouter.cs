@@ -18,12 +18,16 @@ namespace AAR.PCB
         readonly int w,h;
         public readonly float step, gap, padKeepout;
         public int expanded;
+        // Keep the requested precision on ordinary large boards. Placement and
+        // routing must share the bounded step when a board exceeds this budget.
+        public static float EffectiveStep(Vector2 size,float requestedStep)=>
+            Mathf.Max(.01f,Mathf.Max(requestedStep,Mathf.Max(size.x,size.y)/2048));
         public string LastFailure {get;private set;}
         bool Reject(string reason){LastFailure=reason;return false;}
         public PCBTrackRouter(PCBGlobalBoard.Plan plan,float requestedStep,float trackWidth,float clearance,bool bottom=false)
         {
             this.plan=plan;this.bottom=bottom;gap=trackWidth+clearance;viaRadius=trackWidth*1.1f;viaGap=viaRadius+trackWidth*.5f+clearance;
-            step=Mathf.Max(requestedStep,Mathf.Max(plan.size.x,plan.size.y)/1000);
+            step=EffectiveStep(plan.size,requestedStep);
             padKeepout=gap+step*.75f+viaGap;
             w=Mathf.CeilToInt(plan.size.x/step)+1;h=Mathf.CeilToInt(plan.size.y/step)+1;
             obstacles=new bool[w*h];copper=new bool[w*h];

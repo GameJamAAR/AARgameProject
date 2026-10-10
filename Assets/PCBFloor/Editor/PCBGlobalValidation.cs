@@ -35,6 +35,12 @@ namespace AAR.PCB.Editor
             Require(p.links.Count>=count-1,"Incomplete circuit graph.");
             var seen=new HashSet<int>{0};for(int pass=0;pass<count;pass++)foreach(var link in p.links){if(seen.Contains(link.a))seen.Add(link.b);if(seen.Contains(link.b))seen.Add(link.a);}
             Require(seen.Count==count,"Disconnected component.");
+            Require(p.gapFillParts==p.parts.Count(part=>part.gapFiller),"Gap filler count differs from the generated population.");
+            foreach(var part in p.parts)if(part.gapFiller)
+            {
+                Require(part.family>=3&&!part.prefab&&part.ports.Count==2,"Gap filler is not a two-terminal flat SMD component.");
+                Require(Mathf.Abs(part.height-f.globalGapComponentHeight*(part.family==4?1.25f:1))<.00001f,"Gap filler height differs from its independent setting.");
+            }
             var contacts=new HashSet<string>();var segments=new List<(Vector2 a,Vector2 b,int link,int layer)>();
             for(int index=0;index<p.links.Count;index++)
             {

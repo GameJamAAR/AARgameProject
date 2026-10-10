@@ -12,6 +12,7 @@ namespace AAR.PCB
             public GameObject prefab;
             public Vector2 position, size, padHalo,placementHalo;
             public float height,sourceScale;
+            public bool gapFiller;
             public int quarterTurn, family, group;
             public Vector3 sourceSize;
             public readonly List<PCBPort> ports=new List<PCBPort>();
@@ -23,7 +24,7 @@ namespace AAR.PCB
             public Vector2 size;
             public readonly List<Part> parts=new List<Part>();
             public readonly List<Link> links=new List<Link>();
-            public int groups, expandedNodes; public readonly List<Vector2> vias=new List<Vector2>();
+            public int groups, expandedNodes, gapFillParts; public readonly List<Vector2> vias=new List<Vector2>();
         }
         static Vector2 Turn(Vector2 p,int turn)=>turn%2==0 ? (turn==0?p:-p) : (turn==1?new Vector2(p.y,-p.x):new Vector2(-p.y,p.x));
         public static Plan Create(PCBFloorGenerator floor)
@@ -33,16 +34,17 @@ namespace AAR.PCB
             float unit=Mathf.Clamp(floor.globalComponentSize,.5f,6);
             float spread=Mathf.Max(unit*2,floor.globalGroupSpread);
             int requested=Mathf.Clamp(floor.globalGroupCount,1,32);
+            float routingStep=PCBTrackRouter.EffectiveStep(plan.size,floor.globalRoutingStep);
             float routingClearance=floor.globalTraceWidth+floor.globalTrackClearance;
-            float terminalHalo=routingClearance+floor.globalRoutingStep*.75f+floor.globalTraceWidth*1.6f+floor.globalTrackClearance;
+            float terminalHalo=routingClearance+routingStep*.75f+floor.globalTraceWidth*1.6f+floor.globalTrackClearance;
             float trackHalo=floor.globalTraceWidth*.5f+floor.globalTrackClearance;
-            float routingAisle=floor.globalRoutingStep*.65f;
+            float routingAisle=routingStep*.65f;
             var contactSides=new Dictionary<GameObject,Vector2>();
             var occupied=new Dictionary<Vector2Int,List<int>>();float bucket=unit*2;
             bool Place(Part part)
             {
                 var half=part.size*.5f+part.placementHalo+Vector2.one*routingAisle*.5f;
-                if(Mathf.Abs(part.position.x)+half.x>plan.size.x*.5f-routingClearance-floor.globalRoutingStep*2-.2f||Mathf.Abs(part.position.y)+half.y>plan.size.y*.5f-routingClearance-floor.globalRoutingStep*2-.2f)return false;
+                if(Mathf.Abs(part.position.x)+half.x>plan.size.x*.5f-routingClearance-routingStep*2-.2f||Mathf.Abs(part.position.y)+half.y>plan.size.y*.5f-routingClearance-routingStep*2-.2f)return false;
                 var lo=Vector2Int.FloorToInt((part.position-half)/bucket);var hi=Vector2Int.FloorToInt((part.position+half)/bucket);
                 for(int y=lo.y;y<=hi.y;y++)for(int x=lo.x;x<=hi.x;x++)if(occupied.TryGetValue(new Vector2Int(x,y),out var ids))foreach(int id in ids)
                 {var other=plan.parts[id];var d=part.position-other.position;var sum=(part.size+other.size)*.5f+part.placementHalo+other.placementHalo+Vector2.one*routingAisle;if(Mathf.Abs(d.x)<sum.x&&Mathf.Abs(d.y)<sum.y)return false;}
@@ -52,7 +54,7 @@ namespace AAR.PCB
             Part Make(int family,Vector2 p,int group,float multiplier)
             {
                 var part=new Part{family=family,position=p,group=group,quarterTurn=rng.Next(4)};if(family==1)part.quarterTurn=0;
-                var kit=floor.library;var variants=family==3?null:family==1?kit.importedCapacitors:family==2?kit.importedModules:kit.importedPassives;
+                var kit=floor.library;var variants=family>=3?null:family==1?kit.importedCapacitors:family==2?kit.importedModules:kit.importedPassives;
                 if(variants!=null&&variants.Length>0)part.prefab=variants[rng.Next(variants.Length)];
                 float length=unit*multiplier;
                 if(part.prefab)
@@ -65,14 +67,14 @@ namespace AAR.PCB
                         float pitch=float.MaxValue;
                         for(int i=0;i<pins.Count;i++)for(int j=i+1;j<pins.Count;j++)pitch=Mathf.Min(pitch,(pins[i].point-pins[j].point).magnitude);
                         // Full fanouts need room for both copper and independent via annuli.
-                        if(pitch<float.MaxValue)s=Mathf.Max(s,Mathf.Max(floor.globalTraceWidth*2.2f+floor.globalTrackClearance+.065f, Mathf.Max(.5f,floor.globalRoutingStep*2+(floor.globalTraceWidth+floor.globalTrackClearance)*1.5f))/pitch);
+                        if(pitch<float.MaxValue)s=Mathf.Max(s,Mathf.Max(floor.globalTraceWidth*2.2f+floor.globalTrackClearance+.065f, Mathf.Max(.5f,routingStep*2+(floor.globalTraceWidth+floor.globalTrackClearance)*1.5f))/pitch);
                     }
                     part.sourceScale=s;part.size=new Vector2(b.size.x*s,b.size.z*s);
                     if(family==2)part.size+=new Vector2(.12f,.08f);
                     part.height=b.size.y*s*(family==1?floor.globalCapacitorHeightScale:family==2?floor.globalRamHeightScale:floor.globalHeightScale);
                 }
                 else {part.size=family==1?Vector2.one*length:family==3?new Vector2(length*.42f,length):new Vector2(length*.7f,length);part.height=(family==1?length*1.5f:family==3?length*.22f:length*.3f)*(family==1?floor.globalCapacitorHeightScale:family==2?floor.globalRamHeightScale:floor.globalHeightScale);}
-                Vector2 sides=family==3?Vector2.up:family==1?Vector2.right:family==2?(part.size.x>part.size.y?Vector2.up:Vector2.right):Vector2.one;
+                Vector2 sides=family>=3?Vector2.up:family==1?Vector2.right:family==2?(part.size.x>part.size.y?Vector2.up:Vector2.right):Vector2.one;
                 if(family==0&&part.prefab)
                 {
                     if(!contactSides.TryGetValue(part.prefab,out sides))
@@ -146,6 +148,45 @@ namespace AAR.PCB
                 }
                 if(!placed)break;
             }
+
+            // Fill actual gaps independently of the primary group quota. Best-candidate
+            // sampling measures distance to footprints, so large empty spaces are filled
+            // first without imposing another tile grid. The normal router connects these
+            // two-pad SMD parts along with the rest of the circuit.
+            if(composition.x+composition.y+composition.z>0 && floor.componentDensity>0)
+            {
+                int banks=Mathf.Min(160,Mathf.RoundToInt(plan.size.x*plan.size.y/
+                    Mathf.Max(4,unit*unit*5)*floor.globalGapFillDensity*floor.componentDensity));
+                for(int bank=0;bank<banks;bank++)
+                {
+                    Vector2 center=Vector2.zero;float best=-1;
+                    for(int sample=0;sample<32;sample++)
+                    {
+                        var candidate=new Vector2(((float)rng.NextDouble()-.5f)*plan.size.x,((float)rng.NextDouble()-.5f)*plan.size.y);
+                        float distance=Mathf.Min(plan.size.x*.5f-Mathf.Abs(candidate.x),plan.size.y*.5f-Mathf.Abs(candidate.y));
+                        foreach(var part in plan.parts)
+                        {
+                            var delta=candidate-part.position;var half=part.size*.5f+part.placementHalo;
+                            var outside=new Vector2(Mathf.Max(0,Mathf.Abs(delta.x)-half.x),Mathf.Max(0,Mathf.Abs(delta.y)-half.y));
+                            distance=Mathf.Min(distance,outside.magnitude);
+                        }
+                        if(distance>best){best=distance;center=candidate;}
+                    }
+                    if(best<unit*.5f)continue;
+                    int nearest=0;float nearestDistance=float.MaxValue;
+                    for(int g=0;g<centers.Count;g++){float distance=(centers[g]-center).sqrMagnitude;if(distance<nearestDistance){nearestDistance=distance;nearest=g;}}
+                    int turn=rng.Next(4),slots=rng.Next(2,5);
+                    float scale=floor.globalGapComponentSize*(.8f+(float)rng.NextDouble()*.4f);
+                    float pitch=unit*scale*.7f+trackHalo*2+routingAisle+.10f;
+                    for(int slot=0;slot<slots;slot++)
+                    {
+                        var part=Make(rng.NextDouble()<.6?3:4,center+Turn(new Vector2((slot-(slots-1)*.5f)*pitch,0),turn),nearest,scale);
+                        if(part.quarterTurn%2!=turn%2){part.size=new Vector2(part.size.y,part.size.x);part.padHalo=new Vector2(part.padHalo.y,part.padHalo.x);part.placementHalo=new Vector2(part.placementHalo.y,part.placementHalo.x);}
+                        part.quarterTurn=turn;part.height=floor.globalGapComponentHeight*(part.family==4?1.25f:1);part.gapFiller=true;
+                        if(Place(part))plan.gapFillParts++;
+                    }
+                }
+            }
             plan.groups=centers.Count;
             foreach(var part in plan.parts)
             {
@@ -165,7 +206,7 @@ namespace AAR.PCB
                         {bool alongZ=part.size.y>part.size.x;var local=alongZ?new Vector2(side*part.size.x*.5f,(pin-5.5f)*(part.size.y/14)):new Vector2((pin-5.5f)*(part.size.x/14),side*part.size.y*.5f);var dir=alongZ?new Vector2(side,0):new Vector2(0,side);part.ports.Add(new PCBPort{point=part.position+local,direction=dir});}
                     }
                     else for(int sign=-1;sign<=1;sign+=2)
-                    {var dir=part.family==3?Turn(new Vector2(0,sign),part.quarterTurn):new Vector2(sign,0);var half=dir.x!=0?part.size.x*.5f:part.size.y*.5f;part.ports.Add(new PCBPort{point=part.position+dir*half,direction=dir});}
+                    {var dir=part.family>=3?Turn(new Vector2(0,sign),part.quarterTurn):new Vector2(sign,0);var half=dir.x!=0?part.size.x*.5f:part.size.y*.5f;part.ports.Add(new PCBPort{point=part.position+dir*half,direction=dir});}
                 }
             }
             Route(plan,floor);return plan;
@@ -186,18 +227,10 @@ namespace AAR.PCB
             if(floor.globalConnectAllChipPins)foreach(var part in plan.parts)if(part.family==0)foreach(var port in part.ports)
             {var exit=Escape(part,port,1);foreach(var router in layers)router.ProtectLaunch(port.point,exit);}
             if(floor.globalConnectAllChipPins)
-            {
                 for(int a=0;a<count;a++)if(plan.parts[a].family==0)
                 for(int pin=0;pin<plan.parts[a].ports.Count;pin++)
-                {
-                    if(used[a].Contains(pin))continue;
-                    var candidates=new List<int>();for(int b=0;b<count;b++)if(b!=a&&used[b].Count<plan.parts[b].ports.Count)candidates.Add(b);
-                    var point=plan.parts[a].ports[pin].point;
-                    candidates.Sort((b,c)=>(plan.parts[b].position-point).sqrMagnitude.CompareTo((plan.parts[c].position-point).sqrMagnitude));
-                    bool connected=false;foreach(int b in candidates)if(TryLink(a,b,true,pin)){if(Root(a)!=Root(b)){parent[Root(a)]=Root(b);components--;}connected=true;break;}
-                    if(!connected)throw new InvalidOperationException("PCB cannot connect pin "+(pin+1)+" of "+plan.parts[a].prefab.name+" with the requested clearance. Increase board area, routing layers or reduce component density.");
-                }
-            }
+                    if(!used[a].Contains(pin)&&!ConnectPin(a,pin))
+                        throw new InvalidOperationException("PCB cannot connect pin "+(pin+1)+" of "+plan.parts[a].prefab.name+" with the requested clearance. Increase board area, routing layers or reduce component density.");
             // Route ordered socket buses first, before local copper occupies their corridors.
             // Each rail joins a different physical pad and is validated individually.
             foreach(var e in edges)
@@ -228,7 +261,22 @@ namespace AAR.PCB
                 foreach(int b in nearby)if(plan.parts[b].family==0||plan.parts[b].family==2)
                     for(int signal=routed;signal<signals;signal++){if(!TryLink(a,b,false))break;routed++;}
             }
+            // Use the remaining SMD terminals for short visible connections. These
+            // are real, clearance-checked nets rather than decorative loose tracks.
+            foreach(var edge in edges)
+                if((plan.parts[edge.a].gapFiller||plan.parts[edge.b].gapFiller) &&
+                    edge.length<floor.globalComponentSize*floor.globalComponentSize*25)
+                    TryLink(edge.a,edge.b,false);
             plan.expandedNodes=0;foreach(var router in layers)plan.expandedNodes+=router.expanded;
+            bool ConnectPin(int a,int pin)
+            {
+                var candidates=new List<int>();for(int b=0;b<count;b++)if(b!=a&&used[b].Count<plan.parts[b].ports.Count)candidates.Add(b);
+                var point=plan.parts[a].ports[pin].point;
+                candidates.Sort((b,c)=>(plan.parts[b].position-point).sqrMagnitude.CompareTo((plan.parts[c].position-point).sqrMagnitude));
+                foreach(int b in candidates)if(TryLink(a,b,true,pin))
+                {if(Root(a)!=Root(b)){parent[Root(a)]=Root(b);components--;}return true;}
+                return false;
+            }
             int OpenEnds(int root)
             {int available=0;for(int i=0;i<count;i++)if(Root(i)==root)available+=plan.parts[i].ports.Count-used[i].Count;return available;}
             bool TryLink(int ai,int bi,bool allowBottom,int requiredPin=-1)

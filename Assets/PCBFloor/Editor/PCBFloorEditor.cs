@@ -27,7 +27,7 @@ namespace AAR.PCB.Editor
                 ? "Global Board places component groups and routes their contacts across the entire board. Chunk Size only controls baked surface blocks; it does not change the composition. Group recipe weights and imported models come from the library, without rebuilding the tile kit."
                 : "Connect Every Tile guarantees one connected board. Shared Sockets joins neighboring tile ports. Rebuild the starter kit after changing its local recipes.",MessageType.Info);
             EditorGUILayout.HelpBox("Bake Surface replaces shallow copper and pads with normal/material maps. Components remain 3D. Resolution is per render chunk. Disable Bake Surface to inspect the original copper geometry.",MessageType.Info);
-            if(floor.LastGlobalPlan!=null) EditorGUILayout.LabelField("Global composition",$"{floor.LastGlobalPlan.parts.Count} components / {floor.LastGlobalPlan.links.Count} connections");
+            if(floor.LastGlobalPlan!=null) EditorGUILayout.LabelField("Global composition",$"{floor.LastGlobalPlan.parts.Count} components / {floor.LastGlobalPlan.links.Count} connections / {floor.LastGlobalPlan.gapFillParts} gap fillers");
             if(floor.LastSurfaceTrianglesRemoved>0) EditorGUILayout.LabelField("Surface triangles removed",floor.LastSurfaceTrianglesRemoved.ToString("N0"));
             using(new EditorGUI.DisabledScope(!floor.library))
             {

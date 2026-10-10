@@ -147,6 +147,7 @@ public class SettingsMenu : MonoBehaviour
         if (!isOpen) return;
         CancelRebind();
         dither?.SavePreferences();
+        UnityEngine.Object.FindAnyObjectByType<AAR.PCBMusic.PCBMusicController>()?.SavePreferences();
         isOpen = false;
         root.SetActive(false);
         Time.timeScale = previousTimeScale;
@@ -311,6 +312,10 @@ public class SettingsMenu : MonoBehaviour
             i => player.CrouchToggle = i == 1);
         var fov = SliderControl(SettingRow(list, "Champ de vision"), 30f, 110f, "0°",
             x => player.FieldOfView = x);
+        var musicOn = Switch(SettingRow(list, "Musique procédurale"), b =>
+            UnityEngine.Object.FindAnyObjectByType<AAR.PCBMusic.PCBMusicController>()?.SetEnabled(b));
+        var musicVolume = SliderControl(SettingRow(list, "Volume musique"), 0, 1, "0.00", x =>
+            UnityEngine.Object.FindAnyObjectByType<AAR.PCBMusic.PCBMusicController>()?.SetVolume(x));
 
         refreshGamePage = () =>
         {
@@ -321,6 +326,8 @@ public class SettingsMenu : MonoBehaviour
             invert(player.InvertY);
             crouch(player.CrouchToggle ? 1 : 0);
             fov(player.FieldOfView);
+            var music = UnityEngine.Object.FindAnyObjectByType<AAR.PCBMusic.PCBMusicController>();
+            if(music&&music.Settings){musicOn(music.musicEnabled);musicVolume(music.Settings.volume);}
         };
         return page.gameObject;
     }

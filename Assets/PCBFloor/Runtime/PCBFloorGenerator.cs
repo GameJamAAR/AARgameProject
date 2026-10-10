@@ -94,6 +94,7 @@ namespace AAR.PCB
                 var plan=PCBGlobalBoard.Create(this); // Solve before replacing the existing output.
                 Clear();LastGlobalPlan=plan;LastLayout=null;
                 generatedRoot=PCBGlobalBoardRenderer.Build(this,plan,out int removed);
+                AAR.PCBMusic.PCBMusicSnapshot.Capture(generatedRoot,plan,this);
                 LastSurfaceTrianglesRemoved=removed;
 #if UNITY_EDITOR
                 if(!Application.isPlaying){UnityEditor.Undo.RegisterCreatedObjectUndo(generatedRoot.gameObject,"Generate global PCB");UnityEditor.EditorUtility.SetDirty(this);}

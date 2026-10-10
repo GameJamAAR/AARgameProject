@@ -1,0 +1,51 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 90972c10bc071449585283d519c0052c, type: 3}
+  m_Name: Instrument Bank
+  m_EditorClassIdentifier: Assembly-CSharp::AAR.PCBMusic.PCBInstrumentBank
+  instruments:
+  - role: 0
+    clip: {fileID: 8300000, guid: d75e8c97817fe49569cec0c8e851b8a3, type: 3}
+    variant: 0
+  - role: 0
+    clip: {fileID: 8300000, guid: f6d2a4a12e2ba4cb88c24a6a7c7410f2, type: 3}
+    variant: 1
+  - role: 0
+    clip: {fileID: 8300000, guid: 0c71a107f60754626b5f597ee2decd25, type: 3}
+    variant: 2
+  - role: 1
+    clip: {fileID: 8300000, guid: 8b46996f8834249019520bd2ed8afac3, type: 3}
+    variant: 0
+  - role: 1
+    clip: {fileID: 8300000, guid: f10cfd2cb78a540f99e7ca0a3b012d01, type: 3}
+    variant: 1
+  - role: 1
+    clip: {fileID: 8300000, guid: c1ab2530e415d436f919f2909067f8c9, type: 3}
+    variant: 2
+  - role: 2
+    clip: {fileID: 8300000, guid: c1bb00c37715f49869a815e00867f6bb, type: 3}
+    variant: 0
+  - role: 2
+    clip: {fileID: 8300000, guid: 85a721766b15944dfbef7046792b3a22, type: 3}
+    variant: 1
+  - role: 2
+    clip: {fileID: 8300000, guid: d81399d264e3649bbbe44fc5d7e82ae3, type: 3}
+    variant: 2
+  - role: 3
+    clip: {fileID: 8300000, guid: bd6a1a8adf75948038935bb8594cff52, type: 3}
+    variant: 0
+  - role: 3
+    clip: {fileID: 8300000, guid: ce5b97c45df4a4cb697314591e1ad618, type: 3}
+    variant: 1
+  - role: 3
+    clip: {fileID: 8300000, guid: d97c54e2aa7ad45d6ad35491d48c3122, type: 3}
+    variant: 2

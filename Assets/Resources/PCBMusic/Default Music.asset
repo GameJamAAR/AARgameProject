@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: de1cba79247b9423aad73107cc983338, type: 3}
+  m_Name: Default Music
+  m_EditorClassIdentifier: Assembly-CSharp::AAR.PCBMusic.PCBMusicProfile
+  musicSeed: 1984
+  tempo: 68
+  tension: 0.65
+  activity: 0.48
+  silenceChance: 0.32
+  volume: 0.32
+  maxContributors: 3
+  intervals: 000000000200000003000000070000000a000000i
+  silenceDuration: {x: 3, y: 10}
+  veilleDuration: {x: 8, y: 18}
+  pressureDuration: {x: 6, y: 14}
+  suspensionDuration: {x: 3, y: 7}
+  releaseDuration: {x: 5, y: 10}
+  analysisHz: 10
+  maxDistance: 42
+  attentionAttack: 0.5
+  attentionRelease: 1.6
+  centerBias: 0.8
+  candidateLimit: 24
+  occlusion: 1
+  scheduleAhead: 0.2
+  fadeTime: 0.12
+  voicePool: 20

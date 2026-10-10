@@ -14,6 +14,7 @@ using UnityEngine.Rendering;
 ///   Sprint: Shift gauche / L3
 ///   ToggleView : V / R3        (1re ⇄ 3e personne)
 ///   Pause      : Échap / Start (menu Paramètres, géré par SettingsMenu)
+///   Flashlight : F / croix haut (lampe torche, gérée par PlayerFlashlight)
 ///
 /// Menu "AAR > Créer le joueur dans la scène" pour tout monter automatiquement.
 /// </summary>
@@ -75,7 +76,7 @@ public class PlayerController : MonoBehaviour
     // Entrées
     private InputActionMap playerMap;
     private InputAction moveAction, lookAction, jumpAction, crouchAction, sprintAction;
-    private InputAction toggleViewAction, pauseAction;
+    private InputAction toggleViewAction, pauseAction, flashlightAction;
     private bool ownsActions;       // vrai si la map a été créée par code (pas d'asset)
     private InputActionMap extraMap; // ToggleView/Pause créées par code si absentes de l'asset
     private bool inputEnabled = true;
@@ -102,6 +103,8 @@ public class PlayerController : MonoBehaviour
     // ---------- Accès pour le menu Paramètres ----------
     public InputActionMap PlayerMap => playerMap;
     public InputAction PauseAction => pauseAction;
+    public InputAction FlashlightAction => flashlightAction;
+    public Transform CameraPivot => cameraPivot;
     public bool InputEnabled => inputEnabled;
 
     public float MouseSensitivity
@@ -157,8 +160,10 @@ public class PlayerController : MonoBehaviour
         SetupInput();
         ApplyViewMode();
 
-        // Menu Paramètres (Échap), créé automatiquement s'il n'existe pas
+        // Menu Paramètres (Échap), lampe torche (F) et brouillard, créés automatiquement s'ils manquent
         SettingsMenu.Ensure(this);
+        if (!TryGetComponent(out PlayerFlashlight _)) gameObject.AddComponent<PlayerFlashlight>();
+        AtmosphereFog.Ensure();
     }
 
     private void LoadSettings()
@@ -187,6 +192,7 @@ public class PlayerController : MonoBehaviour
                 sprintAction = playerMap.FindAction("Sprint");
                 toggleViewAction = playerMap.FindAction("ToggleView");
                 pauseAction = playerMap.FindAction("Pause");
+                flashlightAction = playerMap.FindAction("Flashlight");
             }
         }
 
@@ -236,13 +242,17 @@ public class PlayerController : MonoBehaviour
         pauseAction.AddBinding("<Keyboard>/escape").WithGroup("Keyboard&Mouse");
         pauseAction.AddBinding("<Gamepad>/start").WithGroup("Gamepad");
 
+        flashlightAction = playerMap.AddAction("Flashlight", InputActionType.Button);
+        flashlightAction.AddBinding("<Keyboard>/f").WithGroup("Keyboard&Mouse");
+        flashlightAction.AddBinding("<Gamepad>/dpad/up").WithGroup("Gamepad");
+
         GameSettings.LoadBindings(playerMap);
     }
 
     // Si l'asset d'un coéquipier n'a pas encore ToggleView / Pause
     private void CreateMissingExtraActions()
     {
-        if (toggleViewAction != null && pauseAction != null) return;
+        if (toggleViewAction != null && pauseAction != null && flashlightAction != null) return;
         extraMap = new InputActionMap("PlayerExtra");
         if (toggleViewAction == null)
         {
@@ -255,6 +265,12 @@ public class PlayerController : MonoBehaviour
             pauseAction = extraMap.AddAction("Pause", InputActionType.Button);
             pauseAction.AddBinding("<Keyboard>/escape");
             pauseAction.AddBinding("<Gamepad>/start");
+        }
+        if (flashlightAction == null)
+        {
+            flashlightAction = extraMap.AddAction("Flashlight", InputActionType.Button);
+            flashlightAction.AddBinding("<Keyboard>/f");
+            flashlightAction.AddBinding("<Gamepad>/dpad/up");
         }
     }
 

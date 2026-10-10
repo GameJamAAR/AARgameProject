@@ -39,6 +39,7 @@ public class SettingsMenu : MonoBehaviour
         { "Attack", "Attaquer" }, { "Interact", "Interagir" },
         { "Previous", "Précédent" }, { "Next", "Suivant" },
         { "ToggleView", "Vue 1re / 3e personne" }, { "Pause", "Menu / Pause" },
+        { "Flashlight", "Lampe torche" },
     };
     private static readonly Dictionary<string, string> MoveLabels = new Dictionary<string, string>
     {

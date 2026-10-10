@@ -308,7 +308,7 @@ public class SettingsMenu : MonoBehaviour
         var invert = Switch(SettingRow(list, "Inverser l'axe vertical"), b => player.InvertY = b);
         var crouch = Segmented(SettingRow(list, "Accroupi"), new[] { "Maintenir", "Basculer" },
             i => player.CrouchToggle = i == 1);
-        var fov = SliderControl(SettingRow(list, "Champ de vision"), 50f, 100f, "0°",
+        var fov = SliderControl(SettingRow(list, "Champ de vision"), 30f, 110f, "0°",
             x => player.FieldOfView = x);
 
         refreshGamePage = () =>

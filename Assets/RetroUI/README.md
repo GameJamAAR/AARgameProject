@@ -1,5 +1,9 @@
 # Shader Lab
 
+The pause settings menu uses the same Windows 98 theme and Tiny5 bitmap font. Its Commandes, Jeu and Affichage tabs keep rebinding, gameplay controls and shared dithering controls together. Display changes are saved locally when the menu closes; resetting display settings restores the project profile.
+
+In Unity, use Tools > AAR > Shared Dither Settings to edit the common profile. Pixel spacing, intensity, Bayer matrix and filtering apply to existing and procedurally generated dithered surfaces. Colors, lighting, textures and special shadow settings remain specific to each material. In a Retro Dither material inspector, Keep local controls exempts selected parameter groups from the shared settings. Runtime changes use a copy of the profile and do not overwrite the project asset.
+
 The ShaderTest scene includes a reusable Windows 98 style debug window. Tiny5 is baked as a point-filtered bitmap atlas at 16 px, and the overlay uses integer scaling to keep its glyphs and bevels crisp. Font source: https://github.com/google/fonts/tree/8b0a1d0f59/ofl/tiny5. The accompanying OFL license is in Fonts/OFL.txt.
 
 Four buttons select Original, Ambre, Menthe and Violet. Original uses each material's existing palette. The other states override the four palette colors without changing Bayer size, screen pixel spacing, strength, lighting or CRT parameters. Only materials using AAR/Retro Dither participate. The UI remains readable above the CRT effect.

@@ -15,8 +15,6 @@ using UnityEngine.Rendering;
 ///   ToggleView : V / R3        (1re ⇄ 3e personne)
 ///   Pause      : Échap / Start (menu Paramètres, géré par SettingsMenu)
 ///   Flashlight : F / croix haut (lampe torche, gérée par PlayerFlashlight)
-///   ToggleView : V / R3        (1re ⇄ 3e personne)
-///   Pause      : Échap / Start (menu Paramètres, géré par SettingsMenu)
 ///
 /// Menu "AAR > Créer le joueur dans la scène" pour tout monter automatiquement.
 /// </summary>
@@ -78,16 +76,10 @@ public class PlayerController : MonoBehaviour
     // Entrées
     private InputActionMap playerMap;
     private InputAction moveAction, lookAction, jumpAction, crouchAction, sprintAction;
-    private bool ownsActions; // vrai si les actions ont été créées par code (pas d'asset)
     private InputAction toggleViewAction, pauseAction, flashlightAction;
     private bool ownsActions;       // vrai si la map a été créée par code (pas d'asset)
     private InputActionMap extraMap; // ToggleView/Pause créées par code si absentes de l'asset
     private bool inputEnabled = true;
-    private InputAction toggleViewAction, pauseAction;
-    private bool ownsActions;       // vrai si la map a été créée par code (pas d'asset)
-    private InputActionMap extraMap; // ToggleView/Pause créées par code si absentes de l'asset
-    private bool inputEnabled = true;
-
 
     // État
     private CharacterController controller;
@@ -113,9 +105,6 @@ public class PlayerController : MonoBehaviour
     public InputAction PauseAction => pauseAction;
     public InputAction FlashlightAction => flashlightAction;
     public Transform CameraPivot => cameraPivot;
-    // ---------- Accès pour le menu Paramètres ----------
-    public InputActionMap PlayerMap => playerMap;
-    public InputAction PauseAction => pauseAction;
     public bool InputEnabled => inputEnabled;
 
     public float MouseSensitivity
@@ -175,9 +164,6 @@ public class PlayerController : MonoBehaviour
         SettingsMenu.Ensure(this);
         if (!TryGetComponent(out PlayerFlashlight _)) gameObject.AddComponent<PlayerFlashlight>();
         AtmosphereFog.Ensure();
-
-        // Menu Paramètres (Échap), créé automatiquement s'il n'existe pas
-        SettingsMenu.Ensure(this);
     }
 
     private void LoadSettings()
@@ -207,8 +193,6 @@ public class PlayerController : MonoBehaviour
                 toggleViewAction = playerMap.FindAction("ToggleView");
                 pauseAction = playerMap.FindAction("Pause");
                 flashlightAction = playerMap.FindAction("Flashlight");
-                toggleViewAction = playerMap.FindAction("ToggleView");
-                pauseAction = playerMap.FindAction("Pause");
             }
         }
 
@@ -269,7 +253,6 @@ public class PlayerController : MonoBehaviour
     private void CreateMissingExtraActions()
     {
         if (toggleViewAction != null && pauseAction != null && flashlightAction != null) return;
-        if (toggleViewAction != null && pauseAction != null) return;
         extraMap = new InputActionMap("PlayerExtra");
         if (toggleViewAction == null)
         {

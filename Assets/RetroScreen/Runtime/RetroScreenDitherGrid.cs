@@ -32,6 +32,7 @@ namespace AAR.RetroScreen
         }
         static void PrepareCamera(ScriptableRenderContext context, Camera camera)
         {
+            RetroEffectsController.PrepareCamera(camera);
             if (!Cameras.TryGetValue(camera, out var grid) && camera.cameraType == CameraType.SceneView)
             {
                 var main = Camera.main;
@@ -44,7 +45,7 @@ namespace AAR.RetroScreen
             var material = feature ? feature.passMaterial : null;
             // Partial blends contain both warped and unwarped images; one lattice
             // cannot cancel both mappings. Leave the original grid during that transition.
-            bool active = feature && feature.isActive && material && material.GetFloat("_Intensity") >= .999f;
+            bool active = RetroEffectsController.CurvatureEnabled && feature && feature.isActive && material && material.GetFloat("_Intensity") >= .999f;
             Shader.SetGlobalVector(WarpId, active
                 ? new Vector4(material.GetFloat("_CurvatureX"), material.GetFloat("_CurvatureY"), material.GetFloat("_Zoom"), 1)
                 : Vector4.zero);

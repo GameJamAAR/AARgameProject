@@ -57,3 +57,13 @@ RetroScreenDitherGrid on the main camera references its Retro Screen renderer fe
 For discrete dither dots use Crisp Pixel Sampling and set Warp Minification Filtering to 0. Full compensation is active at Effect Blend 1. During partial blends the image contains two different mappings, so compensation falls back to the original grid; disabling the referenced feature disables compensation too. Extreme zoom-in or another later image-resizing pass can still resample the grid.
 
 The camera component also publishes the final target resolution. OutputPixels dither sizing uses that resolution rather than the scaled internal color buffer. In Play mode, changing the Game View resolution does not multiply the pixel cell size. Lowering URP render scale still loses sampling detail and may require point upscaling or a higher render scale to preserve very small cells.
+
+## Level design controls
+
+Select **Retro Effects — Level Design** in the scene, or use **Tools > AAR > Retro Effects > Select controls**. **Level Design Mode** temporarily bypasses the material palette/dithering, CRT and Unity Volume post-processing in both Scene and Game views, including Play mode. This authoring switch is ignored in builds. Toggle it through **Tools > AAR > Retro Effects > Toggle level design mode** (Ctrl/Cmd + Alt + L).
+
+**Effects In Scene View** and **Effects In Game View** control the two views independently. Scene view defaults to a neutral preview. Individual switches control dithering, the palette shader, CRT, curvature/zoom, the screen border, vignette, scanlines, color separation and Volume post-processing. Disabling dithering keeps the palette as a smooth color ramp; disabling the palette shader previews continuous base-material lighting. PCB masks and normal maps remain visible.
+
+The controls use per-camera shader globals and temporary camera post-processing suppression. They do not rewrite material, renderer or Volume assets. Removing/disabling the controller restores ordinary shader behavior. A Volume-provided vignette is controlled through **Volume Post Processing**, separately from the CRT's **Vignette** switch.
+
+Verified in the live Editor: independent switches, Scene/Game isolation, Volume state restoration, cleanup on disable, unchanged CRT material, and distinct final/design renders. Both shaders and C# compile successfully.

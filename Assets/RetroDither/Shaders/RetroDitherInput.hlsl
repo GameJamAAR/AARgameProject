@@ -78,6 +78,8 @@ CBUFFER_START(UnityPerMaterial)
 CBUFFER_END
 
 // Zero enabled flag restores the material's original values when no owner exists.
+float4 _RetroEffectsSuppression; // disable dither, CRT, vignette, scanlines
+float4 _RetroEffectsGeometry; // disable curvature, bezel, color separation, palette
 float4 _RetroDitherSharedGrid;   // pixels, strength, Bayer size, enabled
 float4 _RetroDitherSharedSizing; // sizing mode, reference height
 float4 _RetroDitherSharedFilter; // detail, cell lighting, crisp mode, specular AA
@@ -140,6 +142,7 @@ RetroPalette RetroLookPalette(bool target)
 float3 RetroLookColor(float tone, float2 pixel, float filterWidth, float visibility,
     float distanceFade, float3 worldPosition)
 {
+    visibility *= 1.0 - saturate(_RetroEffectsSuppression.x);
     float blend = RetroLookBlend(worldPosition);
     // Evaluate both palettes with identical tone, grid, thresholds and filtering.
     // Only the resulting colors are blended across the Gaussian front.
@@ -165,7 +168,7 @@ float3 RetroPCBComposite(float3 copper, float3 mask, float2 pixel, float3 positi
     if (_PCBBaked < 0.5) return copper;
     float shadow = saturate((1-shadowAttenuation)*_ShadowOpacity);
     float threshold = lerp(0.5,RetroBayer(pixel,RetroSharedDither(_PatternSize,_RetroDitherSharedGrid.z,4)),saturate(RetroSharedDither(_DitherStrength,_RetroDitherSharedGrid.y,2)));
-    float3 board = RetroGroundColor(step(threshold,shadow),positionWS);
+    float3 board = RetroGroundColor(lerp(step(threshold,shadow),shadow,saturate(max(_RetroEffectsSuppression.x,_RetroEffectsGeometry.w))),positionWS);
     float coverage = saturate(mask.r+mask.g);
     return lerp(lerp(board,copper,coverage),_PCBLegendColor.rgb,saturate(mask.b));
 }

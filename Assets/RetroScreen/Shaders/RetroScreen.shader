@@ -36,6 +36,8 @@ Shader "AAR/Retro Screen"
             #include "Packages/com.unity.render-pipelines.core/Runtime/Utilities/Blit.hlsl"
             #include "RetroScreenCore.hlsl"
 
+            float4 _RetroEffectsSuppression;
+            float4 _RetroEffectsGeometry;
             CBUFFER_START(UnityPerMaterial)
                 float4 _BorderColor;
                 float _Intensity;
@@ -93,18 +95,18 @@ Shader "AAR/Retro Screen"
                 // SV_POSITION is independent of render-target orientation and RTHandle scale.
                 float2 uv = input.positionCS.xy / _ScaledScreenParams.xy;
                 half4 original = RetroScreenSample(uv);
-                if (_Intensity <= 0.0) return original;
+                if (_Intensity <= 0.0 || _RetroEffectsSuppression.y > 0.5) return original;
 
                 RetroScreenSettings settings;
-                settings.curvature = float2(_CurvatureX, _CurvatureY);
-                settings.zoom = _Zoom;
+                settings.curvature = _RetroEffectsGeometry.x > 0.5 ? float2(0,0) : float2(_CurvatureX, _CurvatureY);
+                settings.zoom = _RetroEffectsGeometry.x > 0.5 ? 1.0 : _Zoom;
                 settings.cornerRadius = _CornerRadius;
                 settings.borderWidth = _BorderWidth;
                 settings.edgeFeather = _EdgeFeather * 2.0 / _ScaledScreenParams.y;
                 float2 warpedUV = RetroScreenWarp(uv, settings);
                 half3 color = RetroScreenSample(warpedUV).rgb;
 
-                if (_ChromaticAberration > 0.0)
+                if (_ChromaticAberration > 0.0 && _RetroEffectsGeometry.z < 0.5)
                 {
                     float2 offset = (warpedUV * 2.0 - 1.0) * _ChromaticAberration / _ScaledScreenParams.xy;
                     color.r = RetroScreenSample(warpedUV + offset).r;
@@ -113,12 +115,13 @@ Shader "AAR/Retro Screen"
 
                 float2 centered = warpedUV * 2.0 - 1.0;
                 float vignette = smoothstep(1.0 - _VignetteSoftness, 1.0, dot(centered, centered) * 0.5);
-                color *= 1.0 - vignette * _VignetteStrength;
+                color *= 1.0 - vignette * _VignetteStrength * (1.0 - _RetroEffectsSuppression.z);
                 float scanline = RetroScreenScanline(warpedUV, _ScaledScreenParams.y,
                     _ScanlineCount, _ScanlineWidth, settings);
-                color *= 1.0 - scanline * _ScanlineStrength;
+                color *= 1.0 - scanline * _ScanlineStrength * (1.0 - _RetroEffectsSuppression.w);
 
                 float mask = RetroScreenMask(warpedUV, _ScaledScreenParams.x / _ScaledScreenParams.y, settings);
+                if (_RetroEffectsGeometry.y > 0.5) mask = 1.0;
                 // Do not stretch the source's final row/column into the bezel.
                 float valid = step(0.0, warpedUV.x) * step(warpedUV.x, 1.0)
                     * step(0.0, warpedUV.y) * step(warpedUV.y, 1.0);

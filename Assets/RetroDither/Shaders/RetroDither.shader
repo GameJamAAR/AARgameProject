@@ -157,7 +157,7 @@ Shader "AAR/Retro Dither"
                         : input.uv * _UVDensity / max(round(pixelSize), 1.0);
                     groundPixel += _PatternOffset.xy;
                     float threshold = lerp(0.5, RetroBayer(groundPixel, bayerSize), saturate(strength));
-                    float coverage = step(threshold, shadow);
+                    float coverage = lerp(step(threshold, shadow), shadow, saturate(max(_RetroEffectsSuppression.x,_RetroEffectsGeometry.w)));
                     return half4(RetroGroundColor(coverage, input.positionWS), 1);
                 }
                 float energy = _Ambient + RetroLightEnergy(mainLight, normal, view, normalVariance, specularStrength);
@@ -186,6 +186,8 @@ Shader "AAR/Retro Dither"
                 energy += pow(1.0 - saturate(dot(normal, view)), _RimPower) * _RimStrength
                     / (1.0 + normalVariance * detailStability * 8.0);
                 float tone = 1.0 - exp2(-max(energy, 0.0) * _Exposure);
+                if (_RetroEffectsGeometry.w > 0.5)
+                    return half4(RetroPCBComposite(albedo * (tone / max(RetroLuminance(albedo), .001)), pcbMask, 0, input.positionWS, mainLight.shadowAttenuation), 1);
                 tone += pcbMask.g * (_PCBContactBrightness-_Brightness) / max(_Contrast,.01);
                 float cellPixels = max(round(pixelSize * (scaleMode > 0.5 ? RetroDitherOutputDimensions().y / max(referenceHeight, 1.0) : 1.0)), 1.0);
                 float2 patternPixel = _PatternSpace < 0.5

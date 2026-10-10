@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ba2e201a98d524fcdbab07e5d2ac9a39, type: 3}
+  m_Name: Windows 98 Theme
+  m_EditorClassIdentifier: Assembly-CSharp::AAR.RetroUI.Win98Theme
+  font: {fileID: 11400000, guid: 570d225fe0ea948a1af6c037ffdd4bb2, type: 2}
+  face: {r: 0.7529412, g: 0.7529412, b: 0.7529412, a: 1}
+  title: {r: 0, g: 0, b: 0.5019608, a: 1}

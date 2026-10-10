@@ -17,6 +17,7 @@ Shader "AAR/Retro Screen"
         _ScanlineWidth ("Dark Line Width", Range(0.05,0.8)) = 0.3
         _ChromaticAberration ("Color Separation (pixels)", Range(0,5)) = 0
         [ToggleUI] _PointSampling ("Crisp Pixel Sampling", Float) = 1
+        _MinificationFilter ("Warp Minification Filtering", Range(0,1)) = 1
     }
     SubShader
     {
@@ -51,6 +52,7 @@ Shader "AAR/Retro Screen"
                 float _ScanlineWidth;
                 float _ChromaticAberration;
                 float _PointSampling;
+                float _MinificationFilter;
             CBUFFER_END
 
             half4 RetroScreenSample(float2 uv)
@@ -59,7 +61,27 @@ Shader "AAR/Retro Screen"
                 float2 sourceUV = uv * _BlitScaleBias.xy + _BlitScaleBias.zw;
                 half4 sampled = half4(0, 0, 0, 0);
                 if (_PointSampling > 0.5)
+                {
                     sampled = SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_PointClamp, sourceUV, 0);
+                    // Integrate the warped output pixel's source footprint. One bilinear
+                    // lookup cannot resolve a compressed Bayer lattice at curved edges.
+                    float2 sourceSize = _BlitTexture_TexelSize.zw;
+                    float2 dx = ddx(sourceUV);
+                    float2 dy = ddy(sourceUV);
+                    float footprint = max(length(dx * sourceSize), length(dy * sourceSize));
+                    float filterBlend = smoothstep(1.02, 1.35, footprint) * _MinificationFilter;
+                    if (filterBlend > 0.0)
+                    {
+                        float2 a = (dx + dy) * 0.25;
+                        float2 b = (dx - dy) * 0.25;
+                        half4 filtered = (
+                            SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, sourceUV + a, 0) +
+                            SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, sourceUV - a, 0) +
+                            SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, sourceUV + b, 0) +
+                            SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, sourceUV - b, 0)) * 0.25;
+                        sampled = lerp(sampled, filtered, filterBlend);
+                    }
+                }
                 else
                     sampled = SAMPLE_TEXTURE2D_X_LOD(_BlitTexture, sampler_LinearClamp, sourceUV, 0);
                 return sampled;

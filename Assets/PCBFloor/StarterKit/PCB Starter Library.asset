@@ -1,0 +1,260 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 71142ed12fcd644b4815ceb8cdd5b4ed, type: 3}
+  m_Name: PCB Starter Library
+  m_EditorClassIdentifier: Assembly-CSharp::AAR.PCB.PCBTileLibrary
+  importedCapacitors:
+  - {fileID: 5844320233788368589, guid: a4d17c65698e942d3a9fdc0b0c479789, type: 3}
+  - {fileID: 3051680042373829229, guid: 58ddbd30803ce4140a5c672f52743e89, type: 3}
+  importedPassives:
+  - {fileID: 6822709890737693839, guid: a79c8818452aa454c85f1e668ca4e7e0, type: 3}
+  - {fileID: 2397311280940228331, guid: f2698c6afa90041f68f189d7f50601bf, type: 3}
+  importedModules:
+  - {fileID: 7743798192900936786, guid: 8704373e8a65e4a8c98c881d25121f6c, type: 3}
+  importedComponentVariation: 0.65
+  importedHeightScale: 1
+  controllerModules: 1
+  starterVariantCount: 12
+  moduleVariationSeed: 1984
+  chipPositionVariation: 0.13
+  packageSizeVariation: 0.8
+  localTraceDensity: 3
+  capacitorCount: 3
+  resistorCount: 5
+  controllerFootprint: 0.36
+  traceWidth: 0.01
+  busSpacing: 0.055
+  padRadius: 0.025
+  chipFootprint: 0.24
+  surfaceMaterial: {fileID: 2100000, guid: 15f8e14e7eee7435b9daa293a29899f7, type: 2}
+  copperMaterial: {fileID: 2100000, guid: 9573026884d8949b1b18845492dfb05e, type: 2}
+  bodyMaterial: {fileID: 2100000, guid: a273e924d911b4b3f9dabc661f80d223, type: 2}
+  contactMaterial: {fileID: 2100000, guid: de9dc9d0f8f604d91b6034cce6e9fc39, type: 2}
+  legendMaterial: {fileID: 2100000, guid: 408cca6a6649445ae89b0b1ae0ddddeb, type: 2}
+  tiles:
+  - prefab: {fileID: 2300194927227654733, guid: 2d1175de6afaa4775bf8628397f04931, type: 3}
+    sockets: 0
+    weight: 1
+  - prefab: {fileID: 8585055927369305962, guid: 8df93ed0926964a68ac602ec5e0edf91, type: 3}
+    sockets: 0
+    weight: 0.8
+  - prefab: {fileID: 8124067071754964025, guid: a21fe2a8f6fd44bc886b146fbe05a74d, type: 3}
+    sockets: 0
+    weight: 0.8
+  - prefab: {fileID: 7910443894062578398, guid: 1807f30e8c89b474fafcd2a6a8a00dc3, type: 3}
+    sockets: 0
+    weight: 0.8
+  - prefab: {fileID: 7151511587898204950, guid: 9399f0036f6fa4dd29e1069ed0cee716, type: 3}
+    sockets: 0
+    weight: 0.8
+  - prefab: {fileID: 3354616450000132650, guid: bcbdf53b7841749f4b113f7b8b9b1f5f, type: 3}
+    sockets: 0
+    weight: 0.8
+  - prefab: {fileID: 1219104735129370230, guid: 69d03f8fc7cf0410e8710a583bf41f21, type: 3}
+    sockets: 0
+    weight: 0.8
+  - prefab: {fileID: 5082177201762521810, guid: 44595e32dab674a8db1f628f3a15ae03, type: 3}
+    sockets: 0
+    weight: 0.8
+  - prefab: {fileID: 3940654417994337870, guid: 1e4581997ff54494e8b34799a01282c2, type: 3}
+    sockets: 0
+    weight: 0.8
+  - prefab: {fileID: 3842068306334375767, guid: f717d2fda053d47d28752585320c36a5, type: 3}
+    sockets: 0
+    weight: 0.8
+  - prefab: {fileID: 7643763077132284015, guid: fd09dc12f07e448f4a957ca33f0ab200, type: 3}
+    sockets: 0
+    weight: 0.8
+  - prefab: {fileID: 3555776223697913856, guid: 730562049538a4ee6b378dcf00d2f1a5, type: 3}
+    sockets: 0
+    weight: 0.8
+  - prefab: {fileID: 2077975190290523325, guid: 9b1f56175c1b44ad9bd238b8c090df4d, type: 3}
+    sockets: 1
+    weight: 1
+  - prefab: {fileID: 2322797831969027262, guid: 0db5df5fb311440259027fb522eb191a, type: 3}
+    sockets: 1
+    weight: 0.8
+  - prefab: {fileID: 8340463332106055132, guid: e60e77f2ba0414bf3885d418937f11b3, type: 3}
+    sockets: 1
+    weight: 0.8
+  - prefab: {fileID: 7861593967037311070, guid: 8621b81b5fbf34b8d8c685dac01b9714, type: 3}
+    sockets: 1
+    weight: 0.8
+  - prefab: {fileID: 3416242367497476980, guid: d4537f141533349e6bb8f189fb78b434, type: 3}
+    sockets: 1
+    weight: 0.8
+  - prefab: {fileID: 5621758424471465764, guid: ca9e25c9811824ed5b21c6ef7f553fd8, type: 3}
+    sockets: 1
+    weight: 0.8
+  - prefab: {fileID: 2475065060388934121, guid: b9ef0828920f6484ab398fc727d39531, type: 3}
+    sockets: 1
+    weight: 0.8
+  - prefab: {fileID: 6439204504189741783, guid: 64c4ae19764b646f78e4fb850fef9951, type: 3}
+    sockets: 1
+    weight: 0.8
+  - prefab: {fileID: 1450867013500077586, guid: e72de67c031fd46bdb597d459e25ef20, type: 3}
+    sockets: 1
+    weight: 0.8
+  - prefab: {fileID: 3923457554517253910, guid: fa0efb1b0c7b64ef1b98c6903dc1b8ae, type: 3}
+    sockets: 1
+    weight: 0.8
+  - prefab: {fileID: 4965854793218863018, guid: 78404915d36904de188bce1b1ec57c2f, type: 3}
+    sockets: 1
+    weight: 0.8
+  - prefab: {fileID: 8763799170849629425, guid: f93f0c2221857413fac890c1ae1dff96, type: 3}
+    sockets: 1
+    weight: 0.8
+  - prefab: {fileID: 5030814137639880781, guid: bcdb8c7ca97b14bb99b860853946ce6e, type: 3}
+    sockets: 5
+    weight: 1
+  - prefab: {fileID: 2991359215547325688, guid: c34dbc23187ef4b43a93cbe8c865ddf6, type: 3}
+    sockets: 5
+    weight: 0.8
+  - prefab: {fileID: 562917148976180478, guid: d4ecde32a8c9b46e29fd30800ce402a0, type: 3}
+    sockets: 5
+    weight: 0.8
+  - prefab: {fileID: 7031053802145227847, guid: 70f8ddecfa8a24d8b8a0b1fd3b53ab70, type: 3}
+    sockets: 5
+    weight: 0.8
+  - prefab: {fileID: 3660617050392867254, guid: 87a3454758555422e90c5a443dccb567, type: 3}
+    sockets: 5
+    weight: 0.8
+  - prefab: {fileID: 7804492886125078025, guid: 54db70c7428ff437bb2830c8d29c9a01, type: 3}
+    sockets: 5
+    weight: 0.8
+  - prefab: {fileID: 3970889968082904060, guid: 6bdad41d367ff4e25a69a0922f001856, type: 3}
+    sockets: 5
+    weight: 0.8
+  - prefab: {fileID: 7515480214545815987, guid: 6221a81485425471085b380d97f0b103, type: 3}
+    sockets: 5
+    weight: 0.8
+  - prefab: {fileID: 4958576745456395687, guid: 93ec5972f18e841f3b873599cbf1fa4a, type: 3}
+    sockets: 5
+    weight: 0.8
+  - prefab: {fileID: 2760318402779792476, guid: a2802914e5ad2459f95761021d010ed5, type: 3}
+    sockets: 5
+    weight: 0.8
+  - prefab: {fileID: 595714406903441735, guid: b919ace7dbb7b47d894606d6ffa37ad3, type: 3}
+    sockets: 5
+    weight: 0.8
+  - prefab: {fileID: 1081933828896529825, guid: 169dd19fb985c4db8bb4a1e806712c56, type: 3}
+    sockets: 5
+    weight: 0.8
+  - prefab: {fileID: 5520483521888775747, guid: 7f25e1969ec4a4032b7ee33706aa6817, type: 3}
+    sockets: 3
+    weight: 1
+  - prefab: {fileID: 2444490282975655461, guid: b07205206427a454dbe228620a9cfcfa, type: 3}
+    sockets: 3
+    weight: 0.8
+  - prefab: {fileID: 5127651460899197424, guid: 4c766ef262f8640cfb4d8bf7cd3802c1, type: 3}
+    sockets: 3
+    weight: 0.8
+  - prefab: {fileID: 1038706660725846488, guid: b86f6b250a5374da0a51efd90d43e4eb, type: 3}
+    sockets: 3
+    weight: 0.8
+  - prefab: {fileID: 4718931592946733790, guid: c85cc73bca06a414a99762bb8cf30e10, type: 3}
+    sockets: 3
+    weight: 0.8
+  - prefab: {fileID: 4776074498565866558, guid: 0223cf579d04c4831a0fb61451c7dd22, type: 3}
+    sockets: 3
+    weight: 0.8
+  - prefab: {fileID: 3333573815144983524, guid: 136524410693a4d4c89c364dfbeb819b, type: 3}
+    sockets: 3
+    weight: 0.8
+  - prefab: {fileID: 1631155598252670126, guid: 16dfc21d7292d4ee7a2a5f69e953c7f3, type: 3}
+    sockets: 3
+    weight: 0.8
+  - prefab: {fileID: 5896169716500121413, guid: f00dbd26d099a47e685b68c19a9f240b, type: 3}
+    sockets: 3
+    weight: 0.8
+  - prefab: {fileID: 6238056412116703298, guid: b872b665b39574959b6b8d1fbe22307b, type: 3}
+    sockets: 3
+    weight: 0.8
+  - prefab: {fileID: 4728060911632499154, guid: ac94e1a7304344777a1ea32b5cbee6da, type: 3}
+    sockets: 3
+    weight: 0.8
+  - prefab: {fileID: 4363073140865765553, guid: dfd0280c2d6e04bf8ade453dc9de47b0, type: 3}
+    sockets: 3
+    weight: 0.8
+  - prefab: {fileID: 6192451807392650411, guid: 1a69a9aa2e4c04949a92f330036cdac1, type: 3}
+    sockets: 7
+    weight: 1
+  - prefab: {fileID: 8688328091800718650, guid: 542f3067875df41389f6dde7899f5572, type: 3}
+    sockets: 7
+    weight: 0.8
+  - prefab: {fileID: 2571784648021501761, guid: a3825e60f175642f09e9b6e57ff64835, type: 3}
+    sockets: 7
+    weight: 0.8
+  - prefab: {fileID: 8075883150546767063, guid: ddfaa771a2ab04e03b2e4556addfdef1, type: 3}
+    sockets: 7
+    weight: 0.8
+  - prefab: {fileID: 3150935223483581712, guid: 3dd62188c2ae148d1b90e4df84e8023c, type: 3}
+    sockets: 7
+    weight: 0.8
+  - prefab: {fileID: 6743595868312038591, guid: a36992f95274c4da1b339ec721a0da08, type: 3}
+    sockets: 7
+    weight: 0.8
+  - prefab: {fileID: 5622594193370655397, guid: 8495db15c980d4e77a220063e194480e, type: 3}
+    sockets: 7
+    weight: 0.8
+  - prefab: {fileID: 1068688697855134221, guid: 91ed348a2966f439ba8d8022f361edda, type: 3}
+    sockets: 7
+    weight: 0.8
+  - prefab: {fileID: 1233908802665007891, guid: fa3b70e5dcb6c4c7da3b7f1145e10024, type: 3}
+    sockets: 7
+    weight: 0.8
+  - prefab: {fileID: 4258906614700365274, guid: cb80bfcfab82345f88fbb295114b43a1, type: 3}
+    sockets: 7
+    weight: 0.8
+  - prefab: {fileID: 8046359488299471299, guid: 3cbc0721e263344a8bd0891ad23d9a75, type: 3}
+    sockets: 7
+    weight: 0.8
+  - prefab: {fileID: 967206965899686402, guid: ee2c183caf3cc4efc91b1f4e8940e6ce, type: 3}
+    sockets: 7
+    weight: 0.8
+  - prefab: {fileID: 3875706479995425137, guid: 5b16573b0a67a4efca2de12f1d056c36, type: 3}
+    sockets: 15
+    weight: 1
+  - prefab: {fileID: 1749190114264865958, guid: 7002aa4c0af0648d78844011a9b4d86e, type: 3}
+    sockets: 15
+    weight: 0.8
+  - prefab: {fileID: 3799058963146950124, guid: 8cceeba8e049d4107bd5d52dc51f5916, type: 3}
+    sockets: 15
+    weight: 0.8
+  - prefab: {fileID: 5898246499481243174, guid: bc05296e3f8f3425492e20af192f434b, type: 3}
+    sockets: 15
+    weight: 0.8
+  - prefab: {fileID: 949477060646008910, guid: 5eca29292edc94a23ab2f55244fb7817, type: 3}
+    sockets: 15
+    weight: 0.8
+  - prefab: {fileID: 1592313994771519388, guid: 69ac773d0027e4932b5ef8e5c6f5058a, type: 3}
+    sockets: 15
+    weight: 0.8
+  - prefab: {fileID: 5593586614156747137, guid: b36f06ec45a2846eebfd14d1e4d620c4, type: 3}
+    sockets: 15
+    weight: 0.8
+  - prefab: {fileID: 4862816740286034476, guid: 28058e5176f1b4e69b05bbcdb8484985, type: 3}
+    sockets: 15
+    weight: 0.8
+  - prefab: {fileID: 9107488725078463354, guid: faf46257c1c2b4026b11cd5359849f7d, type: 3}
+    sockets: 15
+    weight: 0.8
+  - prefab: {fileID: 2225856490193903417, guid: 02bc224eed39a48629a43d67dd08afef, type: 3}
+    sockets: 15
+    weight: 0.8
+  - prefab: {fileID: 7392980696630051790, guid: fdb5000fb77c64ac798cb90e33563ae2, type: 3}
+    sockets: 15
+    weight: 0.8
+  - prefab: {fileID: 3210869075912239059, guid: 1de61b16c211c4a5d8870f80b182e3b0, type: 3}
+    sockets: 15
+    weight: 0.8
+  authoringContract: 1 x 1; centered edge ports; top Y=0; Surface, Traces, Components, Pins child groups

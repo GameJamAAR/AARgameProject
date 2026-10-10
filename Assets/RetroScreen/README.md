@@ -17,9 +17,10 @@ The scene's regular materials, including Retro Dither, feed into this screen eff
   so even high requested counts stay visible without moire. Zero strength disables them.
 - **Color Separation:** optional red/blue offset in rendered pixels. Zero disables it.
 - **Crisp Pixel Sampling:** nearest sampling preserves dither dots; disable for smoother filtering.
+- **Warp Minification Filtering:** integrates the warped output pixel footprint with four bilinear samples where the warp shrinks source pixels. This reduces moire in the Bayer lattice while preserving crisp point sampling in areas without compression. Filtering can introduce intermediate palette colors at pixel boundaries.
 
 To retain exact scene palette colors, set vignette, scanlines, and color separation
-to zero and use crisp sampling. The bezel and feather can still introduce border colors.
+to zero, use crisp sampling, and disable Warp Minification Filtering. The bezel and feather can still introduce border colors.
 The effect does not imitate or copy Balatro assets; it provides a similar CRT screen shape.
 
 ## Structure and reuse
@@ -48,3 +49,11 @@ only once on the final composition; this setup targets the current single-camera
 Use material `SetFloat` / `SetColor` calls for animation or runtime controls. Clone and
 assign the material for another renderer with independent settings. The material asset
 reference keeps the shader included in builds.
+
+## Regular dither grid through the CRT
+
+RetroScreenDitherGrid on the main camera references its Retro Screen renderer feature. Before each camera renders, it supplies the current curvature and zoom to the object shader. Screen-space Bayer coordinates use the inverse CRT warp and snap to final output pixel centers. The CRT then bends the geometry while returning the dither cells to a regular display lattice. The installer also configures this component when a main camera exists. For another camera/renderer, assign its own feature reference. Scene view uses the main camera's configuration; preview and unregistered cameras use uncompensated screen coordinates.
+
+For discrete dither dots use Crisp Pixel Sampling and set Warp Minification Filtering to 0. Full compensation is active at Effect Blend 1. During partial blends the image contains two different mappings, so compensation falls back to the original grid; disabling the referenced feature disables compensation too. Extreme zoom-in or another later image-resizing pass can still resample the grid.
+
+The camera component also publishes the final target resolution. OutputPixels dither sizing uses that resolution rather than the scaled internal color buffer. In Play mode, changing the Game View resolution does not multiply the pixel cell size. Lowering URP render scale still loses sampling detail and may require point upscaling or a higher render scale to preserve very small cells.

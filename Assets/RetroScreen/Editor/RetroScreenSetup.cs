@@ -22,8 +22,25 @@ namespace AAR.RetroScreen.Editor
             }
             InstallOnRenderer("Assets/Settings/PC_Renderer.asset", material);
             InstallOnRenderer("Assets/Settings/Mobile_Renderer.asset", material);
+            if (Camera.main)
+                InstallDitherGrid(Camera.main, AssetDatabase.LoadAssetAtPath<ScriptableRendererData>("Assets/Settings/PC_Renderer.asset"));
             AssetDatabase.SaveAssets();
             Selection.activeObject = material;
+        }
+
+        public static void InstallDitherGrid(Camera camera, ScriptableRendererData renderer)
+        {
+            if (!camera || !renderer) return;
+            foreach (var feature in renderer.rendererFeatures)
+                if (feature is FullScreenPassRendererFeature full && full.name == "Retro Screen")
+                {
+                    var grid = camera.GetComponent<RetroScreenDitherGrid>();
+                    if (!grid) grid = Undo.AddComponent<RetroScreenDitherGrid>(camera.gameObject);
+                    Undo.RecordObject(grid, "Configure final dither grid");
+                    grid.screenFeature = full;
+                    EditorUtility.SetDirty(grid);
+                    break;
+                }
         }
 
         // Can also be used by other authoring tools to install on any URP renderer asset.

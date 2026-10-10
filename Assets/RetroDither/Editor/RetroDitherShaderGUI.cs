@@ -9,6 +9,17 @@ namespace AAR.RetroDither.Editor
         public override void OnGUI(MaterialEditor editor, MaterialProperty[] properties)
         {
             EditorGUILayout.LabelField("RETRO / DITHER", EditorStyles.boldLabel);
+            Draw(editor, properties, "_ShadowOnly");
+            if (FindProperty("_ShadowOnly", properties).floatValue > 0.5f)
+            {
+                EditorGUILayout.HelpBox("The lit ground stays flat and clean. Only realtime shadows from the main light receive dithering; object lighting is unaffected.", MessageType.None);
+                Section("Ground & shadows");
+                Draw(editor, properties, "_GroundColor", "_GroundShadowColor", "_ShadowOpacity");
+                Section("Shadow pattern");
+                Draw(editor, properties, "_DitherStrength", "_PixelSize", "_PatternScaleMode", "_PatternSize", "_PatternSpace", "_PatternOffset", "_ReferenceHeight", "_UVDensity");
+                editor.EnableInstancingField();
+                return;
+            }
             EditorGUILayout.HelpBox("Four palette colors, ordered from ink to highlight. Lighting selects a band; Bayer dithering blends neighboring bands. All controls belong to this material.", MessageType.None);
 
             Section("Palette");
@@ -20,10 +31,16 @@ namespace AAR.RetroDither.Editor
                 PresetButton(editor, "Glacier", "091D36", "275578", "59B7BB", "E4F4DF");
             }
             Draw(editor, properties, "_ShadowColor", "_DarkColor", "_LightColor", "_HighlightColor");
+            Draw(editor, properties, "_NormalizePalette");
+            EditorGUILayout.HelpBox("Palette normalization orders colors by brightness and merges duplicates. Two unique colors produce a true two-color ramp instead of repeated light/dark inversions. Disable for intentionally ordered palettes.", MessageType.None);
 
             Section("Pattern");
-            Draw(editor, properties, "_DitherStrength", "_PixelSize", "_PatternSize", "_PatternSpace", "_UVDensity");
+            Draw(editor, properties, "_DitherStrength", "_PixelSize", "_PatternScaleMode", "_PatternSize", "_PatternSpace", "_PatternOffset", "_UVDensity");
             EditorGUILayout.HelpBox("Screen coordinates give a stable display grid. Mesh UV coordinates anchor the pattern to the surface. Pixel Size scales the dither pattern; it does not pixelate geometry.", MessageType.None);
+
+            Section("Detail & distance quality");
+            Draw(editor, properties, "_PreserveDither", "_CellLighting", "_DetailStability", "_SpecularAA", "_ReferenceHeight", "_DistanceFade", "_FadeStart", "_FadeEnd");
+            EditorGUILayout.HelpBox("Preserve Crisp Dither keeps Screen mode strictly on palette colors and retains the dots at distance. Cell Lighting Stability stabilizes lighting inside each cell, with protection at sharp edges. Distance Smoothing increases this stabilization. Disable Preserve for the softer blended treatment. Subpixel UV patterns still require filtering.", MessageType.None);
 
             Section("Tone & lighting");
             Draw(editor, properties, "_Contrast", "_Brightness", "_Exposure", "_Ambient", "_LightWrap", "_Specular", "_Shininess", "_RimStrength", "_RimPower");
@@ -31,7 +48,7 @@ namespace AAR.RetroDither.Editor
             Section("Surface input");
             editor.TexturePropertySingleLine(new GUIContent("Tone texture / tint"), FindProperty("_BaseMap", properties), FindProperty("_BaseColor", properties));
             editor.TextureScaleOffsetProperty(FindProperty("_BaseMap", properties));
-            EditorGUILayout.HelpBox("Texture luminance controls the palette ramp. Output always uses the four palette colors. Opaque URP material; realtime lights and shadows are supported.", MessageType.None);
+            EditorGUILayout.HelpBox("Texture luminance controls the palette ramp. Resolved dithering uses the palette; filtered details blend neighboring colors. Opaque URP material; realtime lights and shadows are supported.", MessageType.None);
             editor.EnableInstancingField();
         }
 

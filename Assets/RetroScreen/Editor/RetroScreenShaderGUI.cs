@@ -13,7 +13,7 @@ namespace AAR.RetroScreen.Editor
             Section("Screen shape");
             Draw(editor, properties, "_CurvatureX", "_CurvatureY", "_Zoom", "_CornerRadius", "_BorderWidth", "_EdgeFeather", "_BorderColor");
             Section("CRT finish (optional)");
-            Draw(editor, properties, "_VignetteStrength", "_VignetteSoftness", "_ScanlineStrength", "_ScanlineCount", "_ScanlineWidth", "_ChromaticAberration", "_PointSampling");
+            Draw(editor, properties, "_VignetteStrength", "_VignetteSoftness", "_ScanlineStrength", "_ScanlineCount", "_ScanlineWidth", "_ChromaticAberration", "_PointSampling", "_MinificationFilter");
             EditorGUILayout.HelpBox("Scanlines bend with the picture. Line count is capped at the current resolution so lines remain distinct instead of disappearing into a flat tint.", MessageType.None);
             EditorGUILayout.HelpBox("Parameters belong to this shared material. The Full Screen Pass feature is installed on the project's PC and Mobile renderers. Disable its checkbox to skip the pass entirely.", MessageType.None);
         }

@@ -26,15 +26,16 @@ Material:
     m_Ints: []
     m_Floats:
     - _BorderWidth: 0
-    - _ChromaticAberration: 0
+    - _ChromaticAberration: 2.13
     - _CornerRadius: 0
-    - _CurvatureX: 0.28
-    - _CurvatureY: 0.24
+    - _CurvatureX: 0.155
+    - _CurvatureY: 0.197
     - _EdgeFeather: 8
     - _Intensity: 1
+    - _MinificationFilter: 0.383
     - _PointSampling: 1
     - _ScanlineCount: 180
-    - _ScanlineStrength: 0.5
+    - _ScanlineStrength: 0.213
     - _ScanlineWidth: 0.3
     - _VignetteSoftness: 0.6
     - _VignetteStrength: 0

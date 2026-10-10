@@ -20,6 +20,24 @@ float2 RetroScreenWarp(float2 uv, RetroScreenSettings settings)
     return centered * (1.0 + settings.curvature * radiusSquared) * 0.5 + 0.5;
 }
 
+// Solve source = p * (1 + curvature * |p|²). Its scalar radius equation
+// is monotone, so Newton iteration is stable even at the strongest allowed bend.
+float2 RetroScreenUnwarp(float2 sourceUV, float2 curvature, float zoom)
+{
+    float2 source = sourceUV * 2.0 - 1.0;
+    float2 squared = source * source;
+    float radius = dot(source, source);
+    [unroll] for (int iteration = 0; iteration < 6; ++iteration)
+    {
+        float2 divisor = 1.0 + curvature * radius;
+        float2 divisor2 = divisor * divisor;
+        float residual = radius - dot(squared / divisor2, float2(1,1));
+        float derivative = 1.0 + 2.0 * dot(curvature * squared / (divisor2 * divisor), float2(1,1));
+        radius = max(radius - residual / derivative, 0.0);
+    }
+    return source / (1.0 + curvature * radius) * max(zoom, 0.01) * 0.5 + 0.5;
+}
+
 float RetroScreenScanline(float2 warpedUV, float renderedHeight, float requestedCount,
     float width, RetroScreenSettings settings)
 {

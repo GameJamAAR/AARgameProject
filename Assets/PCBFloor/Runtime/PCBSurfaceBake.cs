@@ -12,7 +12,7 @@ namespace AAR.PCB
             public Texture2D normals, mask;
             public Material material;
         }
-        public static Result Bake(Transform tile, PCBFloorGenerator floor, string key, Transform extraRouting = null)
+        public static Result Bake(Transform tile, PCBFloorGenerator floor, string key, Transform extraRouting = null, Transform extraPads = null)
         {
             int resolution = Mathf.ClosestPowerOfTwo(Mathf.Clamp(floor.surfaceResolution,128,1024));
             var height = new float[resolution*resolution];
@@ -21,14 +21,16 @@ namespace AAR.PCB
             Raster(tile,"Traces",1,resolution,height,ids);
             if(extraRouting) RasterGroup(tile,extraRouting,1,resolution,height,ids);
             Raster(tile,"Pads",2,resolution,height,ids);
+            if(extraPads)RasterGroup(tile,extraPads,2,resolution,height,ids);
             Raster(tile,"Markings",3,resolution,height,ids);
             var pixels = new Color32[height.Length]; var masks = new Color32[height.Length];
-            float step = Mathf.Max(.1f,floor.tileSize)/resolution;
+            float stepX = Mathf.Max(.1f,tile.TransformVector(Vector3.right).magnitude)/resolution;
+            float stepZ = Mathf.Max(.1f,tile.TransformVector(Vector3.forward).magnitude)/resolution;
             for(int y=0;y<resolution;y++) for(int x=0;x<resolution;x++)
             {
                 int i=y*resolution+x;
-                float dx=(height[y*resolution+Mathf.Min(x+1,resolution-1)]-height[y*resolution+Mathf.Max(x-1,0)])/(2*step);
-                float dz=(height[Mathf.Min(y+1,resolution-1)*resolution+x]-height[Mathf.Max(y-1,0)*resolution+x])/(2*step);
+                float dx=(height[y*resolution+Mathf.Min(x+1,resolution-1)]-height[y*resolution+Mathf.Max(x-1,0)])/(2*stepX);
+                float dz=(height[Mathf.Min(y+1,resolution-1)*resolution+x]-height[Mathf.Max(y-1,0)*resolution+x])/(2*stepZ);
                 var normal=new Vector3(-dx*floor.normalStrength,-dz*floor.normalStrength,1).normalized;
                 pixels[i]=new Color(normal.x*.5f+.5f,normal.y*.5f+.5f,normal.z*.5f+.5f,1);
                 masks[i]=new Color32(ids[i]==1?(byte)255:(byte)0,ids[i]==2?(byte)255:(byte)0,ids[i]==3?(byte)255:(byte)0,255);

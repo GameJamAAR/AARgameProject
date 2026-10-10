@@ -59,6 +59,7 @@ namespace AAR.PCB.Editor
                             var b=PCBLayout.Generate(size.x,size.y,seed,coverage,loops,.6f);
                             Require(a.SequenceEqual(b),"Seed must reproduce layout.");
                             PCBLayout.Validate(a,size.x,size.y);
+                            if(coverage==1 && a.Length>1)Require(a.All(mask=>mask!=0),"Full coverage must connect every tile.");
                             layouts++;
                         }
             Require(!PCBLayout.Generate(10,10,1,1,.2f,.6f).SequenceEqual(PCBLayout.Generate(10,10,2,1,.2f,.6f)),"Seeds should vary the layout.");

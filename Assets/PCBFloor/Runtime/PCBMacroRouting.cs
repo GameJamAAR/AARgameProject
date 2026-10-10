@@ -44,6 +44,11 @@ namespace AAR.PCB
             return result;
         }
 
+        public static Vector2[] FeedRoute(Vector2 start,Vector2 end)
+        {
+            var route=new List<Vector2>{start};AppendOctilinear(route,start,end);return route.ToArray();
+        }
+
         static void AppendOctilinear(List<Vector2> route,Vector2 a,Vector2 b)
         {
             var delta=b-a;
@@ -53,18 +58,20 @@ namespace AAR.PCB
             foreach(var point in new[]{p,q,b})if((point-route[route.Count-1]).sqrMagnitude>1e-14f)route.Add(point);
         }
 
-        public static Mesh Build(IReadOnlyList<Vector2[]> routes,float width,float spacing,float height,int laneCount=3)
+        public static Mesh Build(IReadOnlyList<Vector2[]> routes,float width,float spacing,float height,int laneCount=3,bool taperEnds=false)
         {
             var vertices=new List<Vector3>();var triangles=new List<int>();var uv=new List<Vector2>();
             foreach(var route in routes)
-                for(int lane=-(laneCount/2);lane<=laneCount/2;lane++)
+                for(int laneIndex=0;laneIndex<Mathf.Max(1,laneCount);laneIndex++)
                 {
+                    float lane=laneIndex-(Mathf.Max(1,laneCount)-1)*.5f;
                     var shifted=new Vector2[route.Length];
                     // Join offsets using a miter so all rails remain continuous at 45° bends.
                     for(int i=0;i<route.Length;i++)
                     {
                         if(i==0||i==route.Length-1)
                         {
+                            if(taperEnds){shifted[i]=route[i];continue;}
                             var direction=(i==0 ? route[1]-route[0] : route[i]-route[i-1]).normalized;
                             shifted[i]=route[i]+new Vector2(-direction.y,direction.x)*(lane*spacing);
                             continue;

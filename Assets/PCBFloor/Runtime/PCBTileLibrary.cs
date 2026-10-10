@@ -20,8 +20,16 @@ namespace AAR.PCB
         public GameObject[] importedModules = Array.Empty<GameObject>();
         [Range(0,1)] public float importedComponentVariation = .65f;
         [Range(.5f,2)] public float importedHeightScale = 1;
+        [Tooltip("Footprint multiplier for the imported long chips, including their reserved placement and contacts.")]
+        [Range(1,4)] public float importedPassiveScale = 2.2f;
         [Header("Starter kit geometry (rebuild kit to apply)")]
         public bool controllerModules = true;
+        [Header("Central composition (rebuild kit to apply)")]
+        [Tooltip("Relative weights: controller, capacitor bank, RAM bank, empty center.")]
+        public Vector4 centralCompositionWeights = Vector4.one;
+        [Range(.6f,1.2f)] public float centralCapacitorScale = 1;
+        [Range(1,4)] public int centralRamCount = 3;
+        [Range(.5f,2)] public float centralComponentHeight = 1;
         [Range(6,16)] public int starterVariantCount = 12;
         public int moduleVariationSeed = 1984;
         [Range(0,.16f)] public float chipPositionVariation = .13f;

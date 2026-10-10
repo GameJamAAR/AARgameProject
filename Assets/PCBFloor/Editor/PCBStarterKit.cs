@@ -52,6 +52,7 @@ namespace AAR.PCB.Editor
                         var pins = new Geometry();
                         var legend = new Geometry();
                         BuildCircuit(traces, pads, bodies, pins, legend, masks[shape], variant, library);
+                        if(library.controllerModules){var composition=new GameObject("Central "+CentralRecipe(variant,library));composition.transform.SetParent(tile.transform,false);}
                         float side=variant==1 ? 1 : -1;
                         int pinCount=variant==2 ? 5 : 4;
                         float middlePin=(pinCount-1)/2;
@@ -145,7 +146,7 @@ namespace AAR.PCB.Editor
                     float z=chip.y+(pin-(pinCount-1)*.5f)*pitch;
                     float landX=chip.x+bank*(sx*.5f+.022f);
                     pads.Box(new Vector3(landX,.007f,z),new Vector3(.052f,.014f,pitch*.55f));
-                    pins.Box(new Vector3(landX-bank*.009f,.020f,z),new Vector3(.050f,.023f,pitch*.38f));
+                    pins.Box(new Vector3(landX-bank*.009f,.01575f,z),new Vector3(.050f,.0315f,pitch*.38f));
                     float viaX=chip.x+bank*(sx*.5f+.077f);
                     float viaZ=z+(pin-(pinCount-1)*.5f)*.008f;
                     traces.Route(new[] {new Vector2(landX,z),new Vector2(viaX-.018f*bank,z),new Vector2(viaX,viaZ)},width*.65f,height);
@@ -172,7 +173,7 @@ namespace AAR.PCB.Editor
                 {
                     float z=c.y+sign*.045f;
                     pads.Box(new Vector3(c.x,.006f,z),new Vector3(.040f,.012f,.027f));
-                    pins.Box(new Vector3(c.x,.020f,c.y+sign*.033f),new Vector3(.033f,.026f,.019f));
+                    pins.Box(new Vector3(c.x,.0165f,c.y+sign*.033f),new Vector3(.033f,.033f,.019f));
                     var end=new Vector2(c.x,sign>0 ? .41f : .15f);
                     traces.Route(new[] {new Vector2(c.x,z),new Vector2(c.x,sign>0 ? .37f : .18f),end},width*.65f,height);
                     pads.Ring(end,.017f,.007f,0,.014f);
@@ -185,7 +186,7 @@ namespace AAR.PCB.Editor
                     : new Vector2(side*(.20f+i*.067f),variant==0 ? .29f : .38f);
                 pads.Ring(p,.026f,.010f,0,.020f);
                 bodies.Box(new Vector3(p.x,.025f,p.y),new Vector3(.051f,.04f,.056f));
-                pins.Box(new Vector3(p.x,.085f,p.y),new Vector3(.016f,.09f,.016f));
+                pins.Box(new Vector3(p.x,.065f,p.y),new Vector3(.016f,.13f,.016f));
                 var end=new Vector2(p.x,.19f);
                 traces.Route(new[] {p,end},width*.7f,height);
                 pads.Ring(end,.016f,.006f,0,.015f);
@@ -232,11 +233,87 @@ namespace AAR.PCB.Editor
             location=default;return false;
         }
 
+        enum CentralComposition { Controller, Capacitors, RAM, Empty }
+        static CentralComposition CentralRecipe(int variant,PCBTileLibrary kit)
+        {
+            var weights=kit.centralCompositionWeights;
+            float total=Mathf.Max(0,weights.x)+Mathf.Max(0,weights.y)+Mathf.Max(0,weights.z)+Mathf.Max(0,weights.w);
+            if(total<=0)return CentralComposition.Empty;
+            int variantCount=Mathf.Clamp(kit.starterVariantCount,6,16);
+            // Coprime permutation preserves distribution for every supported variant count.
+            int stride=variantCount%5!=0 ? 5 : 7;
+            float sample=((variant*stride)%variantCount+.5f)/variantCount*total;
+            for(int i=0;i<4;i++){sample-=Mathf.Max(0,weights[i]);if(sample<0)return (CentralComposition)i;}
+            return CentralComposition.Empty;
+        }
+
+        static void BuildCentral(Geometry traces,Geometry pads,Geometry bodies,Geometry pins,Vector2 center,
+            Vector2 package,CentralComposition composition,int variant,PCBTileLibrary kit,float width,float height)
+        {
+            if(composition==CentralComposition.Controller)
+            {
+                bodies.Box(new Vector3(center.x,.065f,center.y),new Vector3(package.x,.080f,package.y));
+                bodies.Box(new Vector3(center.x,.108f,center.y),new Vector3(package.x*.90f,.006f,package.y*.90f));
+                return;
+            }
+            // Compact chamfered power bus joins the central bank's solder lands.
+            // It also leaves an empty recipe free of a compulsory package.
+            var half=package*.5f+Vector2.one*.067f;float bevel=.030f;
+            var bus=new[]{new Vector2(-half.x+bevel,-half.y),new Vector2(half.x-bevel,-half.y),
+                new Vector2(half.x,-half.y+bevel),new Vector2(half.x,half.y-bevel),
+                new Vector2(half.x-bevel,half.y),new Vector2(-half.x+bevel,half.y),
+                new Vector2(-half.x,half.y-bevel),new Vector2(-half.x,-half.y+bevel),new Vector2(-half.x+bevel,-half.y)};
+            for(int i=0;i<bus.Length;i++)bus[i]+=center;
+            traces.Route(bus,width,height);
+            if(composition==CentralComposition.Capacitors)
+            {
+                int count=4+variant%3;
+                for(int i=0;i<count;i++)
+                {
+                    Vector2 local;float radius,capHeight;
+                    float unit=Mathf.Min(package.x,package.y)*kit.centralCapacitorScale;
+                    if(i==0){local=new Vector2(-.26f,.17f);radius=unit*.15f;capHeight=.24f;}
+                    else if(i<3){local=new Vector2(.23f,i==1 ? .25f : -.04f);radius=unit*.095f;capHeight=.15f;}
+                    else {local=new Vector2(-.28f+(i-3)*.24f,-.32f);radius=unit*.060f;capHeight=.085f;}
+                    var p=center+Vector2.Scale(local,package);capHeight*=kit.centralComponentHeight;
+                    if(!Imported(bodies,pins,kit.importedCapacitors,p,Vector2.one*radius*2,0,capHeight,variant,50+i,kit,out _))
+                    {bodies.Ring(p,radius,0,.010f,capHeight);pins.Ring(p,radius*.9f,0,capHeight,capHeight+.004f);}
+                    for(int sign=-1;sign<=1;sign+=2)
+                    {
+                        var land=p+new Vector2(sign*radius,0);
+                        pins.Box(new Vector3(land.x,.010f,land.y),new Vector3(.025f,.020f,.008f));
+                        pads.Ring(land,.008f,.003f,0,.012f);
+                        traces.Route(new[]{land,new Vector2(center.x+sign*half.x,land.y)},width*.65f,height);
+                    }
+                }
+            }
+            else if(composition==CentralComposition.RAM)
+            {
+                int count=Mathf.Clamp(kit.centralRamCount,1,4);
+                for(int i=0;i<count;i++)
+                {
+                    var p=center+new Vector2((i-(count-1)*.5f)*package.x/(count+1),0);
+                    var footprint=new Vector2(package.x/(count+1)*.48f,package.y*.78f);
+                    if(!Imported(bodies,pins,kit.importedModules,p,footprint,.014f,.18f*kit.centralComponentHeight,variant,70+i,kit,out _))
+                        bodies.Box(new Vector3(p.x,.080f*kit.centralComponentHeight+.014f,p.y),new Vector3(.012f,.16f*kit.centralComponentHeight,footprint.y));
+                    bodies.Box(new Vector3(p.x,.007f,p.y),new Vector3(footprint.x,.014f,footprint.y+.012f));
+                    for(int sign=-1;sign<=1;sign+=2)
+                    {
+                        var land=p+new Vector2(0,sign*(footprint.y*.5f+.008f));
+                        pins.Box(new Vector3(land.x,.007f,land.y),new Vector3(footprint.x*.8f,.014f,.024f));
+                        pads.Box(new Vector3(land.x,.006f,land.y),new Vector3(footprint.x,.012f,.020f));
+                        traces.Route(new[]{land,new Vector2(land.x,center.y+sign*half.y)},width*.65f,height);
+                    }
+                }
+            }
+        }
+
         static void BuildController(Geometry traces,Geometry pads,Geometry bodies,Geometry pins,Geometry legend,
             int mask,int variant,PCBTileLibrary kit)
         {
             var center=ControllerCenter(variant,kit);
             var package=ControllerSize(variant,kit);
+            var central=CentralRecipe(variant,kit);
             float width=Mathf.Clamp(kit.traceWidth,.004f,.018f),spacing=Mathf.Clamp(kit.busSpacing,.045f,.085f);
             const float height=.008f;
             var router=new PCBTraceRouter(width*.5f+.003f);
@@ -244,21 +321,21 @@ namespace AAR.PCB.Editor
             var placement=new PCBTraceRouter(width*.5f+.003f);placement.Keepout(center,package+Vector2.one*.16f);
             var signalLands=new List<Vector2>();var escapes=new List<Vector2>();
             var mainRoutes=new List<Vector2[]>();var terminals=new List<Vector2>();
-            if(!Imported(bodies,pins,kit.importedModules,center,package*.9f,.024f,.22f,variant,0,kit,variant%4==1))
-            {
-                bodies.Box(new Vector3(center.x,.065f,center.y),new Vector3(package.x,.080f,package.y));
-                bodies.Box(new Vector3(center.x,.108f,center.y),new Vector3(package.x*.90f,.006f,package.y*.90f));
-            }
+            var chipTerminals=new List<Vector2>();
+            BuildCentral(traces,pads,bodies,pins,center,package,central,variant,kit,width,height);
             for(int d=0;d<4;d++)
             {
                 var dir=PCBLayout.Directions[d];var forward=new Vector2(dir.x,dir.y);var tangent=new Vector2(-forward.y,forward.x);
                 float radial=dir.x==0 ? package.y*.5f : package.x*.5f;
                 float pitch=Mathf.Min(.045f,(dir.x==0 ? package.x : package.y)/7.8f);
-                for(int p=-3;p<=3;p++)
+                int bankSize=central==CentralComposition.Controller ? 3 : 1;
+                for(int p=-bankSize;p<=bankSize;p++)
                 {
                     var land=center+forward*(radial+.033f)+tangent*(p*pitch);
                     pads.Box(new Vector3(land.x,.006f,land.y),new Vector3(pitch*.64f,.012f,.075f),dir.x==0 ? 0 : 90);
-                    pins.Box(new Vector3(land.x-forward.x*.012f,.030f,land.y-forward.y*.012f),new Vector3(pitch*.49f,.038f,.056f),dir.x==0 ? 0 : 90);
+                    if(central==CentralComposition.Controller)
+                        pins.Box(new Vector3(land.x-forward.x*.012f,.030f,land.y-forward.y*.012f),new Vector3(pitch*.49f,.060f,.056f),dir.x==0 ? 0 : 90);
+                    else pads.Ring(land,pitch*.23f,pitch*.09f,0,.012f);
                     var escape=center+forward*(radial+.090f)+tangent*(p*pitch);
                     if(p>=-1&&p<=1&&(mask&(1<<d))!=0)
                     {
@@ -272,8 +349,11 @@ namespace AAR.PCB.Editor
             }
             Outline(legend,center,package+Vector2.one*.12f);
             legend.Label(new Vector2(center.x-.035f,center.y-package.y*.5f-.10f),variant+1);
-            pins.Ring(center+new Vector2(-package.x*.34f,package.y*.34f),.012f,0,.112f,.115f);
-            for(int stripe=0;stripe<3;stripe++)pins.Box(new Vector3(center.x,.114f,center.y+stripe*.027f-.027f),new Vector3(package.x*.34f,.003f,.008f));
+            if(central==CentralComposition.Controller)
+            {
+                pins.Ring(center+new Vector2(-package.x*.34f,package.y*.34f),.012f,0,.112f,.115f);
+                for(int stripe=0;stripe<3;stripe++)pins.Box(new Vector3(center.x,.114f,center.y+stripe*.027f-.027f),new Vector3(package.x*.34f,.003f,.008f));
+            }
             foreach(var route in mainRoutes){traces.Route(route,width,height);router.Reserve(route,width);placement.Reserve(route,width);}
             for(int i=0;i<escapes.Count;i++)
                 router.Reserve(new[]{signalLands[i],escapes[i]-(escapes[i]-signalLands[i]).normalized*.020f},width);
@@ -286,7 +366,7 @@ namespace AAR.PCB.Editor
                 float capHeight=variant==4 ? .24f : variant==2 ? .10f : .14f+(c%2)*.035f;
                 if(!PlaceComponent(placement,preferred,new Vector2(radius*2+.050f,radius*2+.012f),variant,c,out var location))continue;
                 router.Keepout(location,Vector2.one*radius*2);
-                if(!Imported(bodies,pins,kit.importedCapacitors,location,Vector2.one*radius*2,.019f,capHeight-.019f,variant,c+1,kit))
+                if(!Imported(bodies,pins,kit.importedCapacitors,location,Vector2.one*radius*2,0,capHeight,variant,c+1,kit,out _))
                 {
                     bodies.Ring(location,radius,0,.019f,capHeight);pins.Ring(location,radius*.89f,0,capHeight,capHeight+.004f);
                     bodies.Box(new Vector3(location.x,capHeight+.006f,location.y),new Vector3(radius*1.1f,.003f,.004f));
@@ -296,7 +376,7 @@ namespace AAR.PCB.Editor
                 {
                     var land=location+new Vector2(sign*(radius+.018f),0);
                     pads.Ring(land,.011f,.004f,0,.012f);
-                    pins.Box(new Vector3(location.x+sign*radius,.019f,location.y),new Vector3(.032f,.010f,.008f));
+                    pins.Box(new Vector3(location.x+sign*radius,.012f,location.y),new Vector3(.032f,.024f,.008f));
                     terminals.Add(land);
                 }
             }
@@ -304,19 +384,67 @@ namespace AAR.PCB.Editor
             for(int r=0;r<resistors;r++)
             {
                 var preferred=r<4 ? new Vector2(-.38f+r*.08f,.34f) : new Vector2(.10f+(r-4)*.082f,-.35f);
-                if(!PlaceComponent(placement,preferred,new Vector2(.048f,.130f),variant,r+5,out var location))continue;
-                router.Keepout(location,new Vector2(.038f,.080f));
-                if(!Imported(bodies,pins,kit.importedPassives,location,new Vector2(.038f,.080f),.0125f,.045f,variant,r+8,kit))
+                bool selectedImport=PickImported(kit.importedPassives,variant,r+8,kit);
+                float chipScale=selectedImport ? Mathf.Clamp(kit.importedPassiveScale,1,4) : 1;
+                var footprint=new Vector2(.038f,.080f)*chipScale;
+                if(!PlaceComponent(placement,preferred,footprint+(selectedImport ? Vector2.one*.100f : new Vector2(.010f,.050f)),variant,r+5,out var location))continue;
+                bool importedPassive=Imported(bodies,pins,kit.importedPassives,location,footprint,0,.045f*chipScale,variant,r+8,kit,out var passiveSize);
+                router.Keepout(location,importedPassive ? new Vector2(passiveSize.x,passiveSize.z) : footprint);
+                if(importedPassive)
+                {
+                    var importedPrefab=PickImported(kit.importedPassives,variant,r+8,kit);
+                    var contacts=PCBImportedPinLayout.Contacts(importedPrefab,location,passiveSize);
+                    if(contacts.Count==0)throw new System.InvalidOperationException("Imported chip has no mounting contacts: "+importedPrefab.name);
+                    for(int contactIndex=0;contactIndex<contacts.Count;contactIndex++)
+                    {
+                        var contact=contacts[contactIndex];var direction=contact.direction;
+                        float halfExtent=direction.x!=0 ? passiveSize.x*.5f : passiveSize.z*.5f;
+                        // One long branch per bank gets first access to the main router.
+                        bool branch=contactIndex==0||contacts[contactIndex-1].direction!=direction;
+                        var tangent=new Vector2(-direction.y,direction.x);
+                        float transverse=Vector2.Dot(contact.point-location,tangent);
+                        var escape=location+direction*(halfExtent+(branch ? .048f : .020f))+tangent*transverse;
+                        float pinWidth=Mathf.Clamp(contact.width*.60f,.0012f,.004f);
+                        pads.Box(new Vector3(contact.point.x,.006f,contact.point.y),new Vector3(pinWidth*1.6f,.012f,.013f),direction.x!=0 ? 90 : 0);
+                        traces.Route(new[]{contact.point,escape},pinWidth,height);
+                        pads.Ring(escape,pinWidth*.9f,pinWidth*.32f,0,.012f);
+                        // Keep the branch's routing endpoint clear of its own fanout.
+                        router.Reserve(new[]{contact.point,branch ? escape-direction*.022f : escape},pinWidth);
+                        if(branch)chipTerminals.Add(escape);
+                    }
+                    continue;
+                }
+                if(!importedPassive)
                 {
                     bodies.Box(new Vector3(location.x,.035f,location.y),new Vector3(.038f,.045f,.080f));
                     for(int band=0;band<3;band++)pins.Box(new Vector3(location.x,.060f,location.y+(band-1)*.018f),new Vector3(.040f,.004f,.007f));
                 }
                 for(int sign=-1;sign<=1;sign+=2)
                 {
-                    var land=location+new Vector2(0,sign*.05f);
-                    pads.Box(new Vector3(land.x,.006f,land.y),new Vector3(.045f,.012f,.030f));
-                    pins.Box(new Vector3(land.x,.025f,land.y),new Vector3(.037f,.023f,.025f));
+                    float halfLength=importedPassive ? passiveSize.z*.5f : .040f;
+                    float contactWidth=importedPassive ? Mathf.Min(passiveSize.x,.037f) : .037f;
+                    var land=location+new Vector2(0,sign*(halfLength+.010f));
+                    pads.Box(new Vector3(land.x,.006f,land.y),new Vector3(contactWidth+.008f,.012f,.030f));
+                    float contactHeight=importedPassive ? .004f : .0365f;
+                    pins.Box(new Vector3(land.x,contactHeight*.5f,land.y-sign*.005f),new Vector3(contactWidth,contactHeight,.030f));
                     terminals.Add(land);
+                }
+            }
+            // A vertical RAM module sits in a low socket, with contacts at the socket ends.
+            // Its thin board keeps the imported proportions and does not receive QFP legs.
+            if(variant%3==1 && PlaceComponent(placement,new Vector2(.30f,-.27f),new Vector2(.090f,.29f),variant,24,out var ram))
+            {
+                if(Imported(bodies,pins,kit.importedModules,ram,new Vector2(.055f,.24f),.014f,.10f,variant,24,kit,out _))
+                {
+                    router.Keepout(ram,new Vector2(.075f,.27f));
+                    bodies.Box(new Vector3(ram.x,.007f,ram.y),new Vector3(.075f,.014f,.27f));
+                    for(int sign=-1;sign<=1;sign+=2)
+                    {
+                        var land=ram+new Vector2(0,sign*.145f);
+                        pads.Box(new Vector3(land.x,.006f,land.y),new Vector3(.060f,.012f,.035f));
+                        pins.Box(new Vector3(land.x,.007f,land.y-sign*.014f),new Vector3(.050f,.014f,.045f));
+                        terminals.Add(land);
+                    }
                 }
             }
             int headerPins=recipe==5 ? 7 : recipe==3 ? 2 : 4;
@@ -325,14 +453,15 @@ namespace AAR.PCB.Editor
                 var preferred=recipe==5 ? new Vector2(-.32f+i*.060f,-.44f) : new Vector2(.44f,-.28f+i*.063f);
                 if(!PlaceComponent(placement,preferred,Vector2.one*.038f,variant,i+15,out var location))continue;
                 pads.Ring(location,.016f,.007f,0,.014f);
-                pins.Box(new Vector3(location.x,.085f,location.y),new Vector3(.014f,.12f,.014f));
+                pins.Box(new Vector3(location.x,.0725f,location.y),new Vector3(.014f,.145f,.014f));
                 terminals.Add(location);
             }
             // Prefer nearby pins, then try other free pins when the direct corridor is occupied.
             // A rejected route is omitted; it never becomes a crossing or a floating ornament.
             int budget=Mathf.Clamp(kit.localTraceDensity,1,3)*7;
             int connected=0;
-            foreach(var terminal in terminals)
+            chipTerminals.AddRange(terminals);
+            foreach(var terminal in chipTerminals)
             {
                 if(connected>=budget)break;
                 var candidates=new List<int>();for(int i=0;i<escapes.Count;i++)candidates.Add(i);
@@ -347,13 +476,20 @@ namespace AAR.PCB.Editor
             }
         }
 
-        static bool Imported(Geometry bodies,Geometry pins,GameObject[] variants,Vector2 center,Vector2 footprint,
-            float bottom,float height,int variant,int index,PCBTileLibrary kit,bool allowed=true)
+        static GameObject PickImported(GameObject[] variants,int variant,int index,PCBTileLibrary kit)
         {
-            if(!allowed||variants==null||variants.Length==0)return false;
+            if(variants==null||variants.Length==0)return null;
             var random=new System.Random(kit.moduleVariationSeed ^ variant*7919 ^ index*104729);
-            if(random.NextDouble()>=kit.importedComponentVariation)return false;
-            var prefab=variants[random.Next(variants.Length)];if(!prefab)return false;
+            if(random.NextDouble()>=kit.importedComponentVariation)return null;
+            return variants[random.Next(variants.Length)];
+        }
+
+        static bool Imported(Geometry bodies,Geometry pins,GameObject[] variants,Vector2 center,Vector2 footprint,
+            float bottom,float height,int variant,int index,PCBTileLibrary kit,out Vector3 mountedSize,bool allowed=true)
+        {
+            mountedSize=Vector3.zero;
+            if(!allowed)return false;
+            var prefab=PickImported(variants,variant,index,kit);if(!prefab)return false;
             var filters=prefab.GetComponentsInChildren<MeshFilter>();
             var bounds=new Bounds();bool first=true;
             foreach(var f in filters)
@@ -363,7 +499,8 @@ namespace AAR.PCB.Editor
             }
             if(first||bounds.size.y<.0001f)return false;
             float horizontal=Mathf.Min(footprint.x/Mathf.Max(bounds.size.x,.0001f),footprint.y/Mathf.Max(bounds.size.z,.0001f));
-            var scale=new Vector3(horizontal,height*kit.importedHeightScale/bounds.size.y,horizontal);
+            var scale=new Vector3(horizontal,Mathf.Min(horizontal,height/bounds.size.y)*kit.importedHeightScale,horizontal);
+            mountedSize=Vector3.Scale(bounds.size,scale);
             var offset=new Vector3(center.x,bottom,center.y)-Vector3.Scale(new Vector3(bounds.center.x,bounds.min.y,bounds.center.z),scale);
             foreach(var f in filters)
             {

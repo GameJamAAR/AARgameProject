@@ -9,9 +9,42 @@ namespace AAR.PCB
     {
         [Header("Tile kit")]
         public PCBTileLibrary library;
-        public enum RoutingStyle { MatchedTiles, SharedSockets }
+        public enum RoutingStyle { MatchedTiles, SharedSockets, GlobalBoard }
         [Header("Layout")]
-        public RoutingStyle routingStyle = RoutingStyle.MatchedTiles;
+        public RoutingStyle routingStyle = RoutingStyle.GlobalBoard;
+        [Tooltip("Connect every tile, regardless of Trace Coverage. Loop Chance still controls extra links.")]
+        public bool connectEveryTile = true;
+        [Header("Global board (independent of render chunks)")]
+        public Vector2 globalBoardSize = new Vector2(64.8f,54);
+        [Min(1)] public float globalChunkSize = 10.8f;
+        [Range(1,32)] public int globalGroupCount = 24;
+        [Range(3,40)] public int globalPartsPerGroup = 12;
+        [Min(1)] public float globalGroupSpread = 8;
+        [Range(.5f,6)] public float globalComponentSize = 2.2f;
+        [Range(.1f,2)] public float globalHeightScale = .35f;
+        [Range(.1f,2)] public float globalCapacitorHeightScale = .65f;
+        [Tooltip("Vertical proportion of imported RAM, independent of chip/capacitor height.")]
+        [Range(.1f,2)] public float globalRamHeightScale = 1f;
+        [Tooltip("Require a separate routed connection from every modeled IC pin.")]
+        public bool globalConnectAllChipPins = true;
+        [Tooltip("Copper layers available for dense circuits; top stays visible, other layers connect through vias.")]
+        [Range(2,8)] public int globalRoutingLayers = 8;
+        [Range(2,8)] public int globalCapacitorsPerGroup = 5;
+        [Range(2,8)] public int globalResistorBankSize = 4;
+        [Tooltip("Fill remaining board-wide gaps with connected, low-profile SMD banks. Zero disables gap filling.")]
+        [Range(0,1)] public float globalGapFillDensity = .7f;
+        [Tooltip("Footprint scale of the small gap-filling resistors and ceramic capacitors.")]
+        [Range(.15f,.6f)] public float globalGapComponentSize = .36f;
+        [Tooltip("Height of gap-filling SMD parts; does not change imported capacitors or RAM.")]
+        [Range(.02f,.3f)] public float globalGapComponentHeight = .10f;
+        [Range(.04f,.3f)] public float globalTraceWidth = .10f;
+        [Range(.02f,.2f)] public float globalTrackClearance = .055f;
+        [Range(0,24)] public int globalSignalsPerChip = 12;
+        [Tooltip("Legacy bundle controls. Global Board routes individual contacts instead.")]
+        [Range(.08f,.4f)] public float globalBusSpacing = .18f;
+        [Range(1,5)] public int globalBusLanes = 3;
+        [Range(.06f,1)] public float globalRoutingStep = .08f;
+        public PCBGlobalBoard.Plan LastGlobalPlan { get; private set; }
         [Range(0, .25f)] public float socketVariation = .20f;
         [Range(0, .12f)] public float junctionVariation = .10f;
         [SerializeField, HideInInspector] Mesh macroMesh;
@@ -56,11 +89,25 @@ namespace AAR.PCB
                 if(!copper || copper.shader.name != "AAR/Retro Dither")
                     throw new InvalidOperationException("Baked PCB surfaces require an AAR/Retro Dither trace material. Disable Bake Surface to use a different shader.");
             }
+            if(routingStyle==RoutingStyle.GlobalBoard)
+            {
+                var plan=PCBGlobalBoard.Create(this); // Solve before replacing the existing output.
+                Clear();LastGlobalPlan=plan;LastLayout=null;
+                generatedRoot=PCBGlobalBoardRenderer.Build(this,plan,out int removed);
+                LastSurfaceTrianglesRemoved=removed;
+#if UNITY_EDITOR
+                if(!Application.isPlaying){UnityEditor.Undo.RegisterCreatedObjectUndo(generatedRoot.gameObject,"Generate global PCB");UnityEditor.EditorUtility.SetDirty(this);}
+#endif
+                return;
+            }
+            LastGlobalPlan=null;
             LastSurfaceTrianglesRemoved = 0;
             int w = Mathf.Clamp(columns, 1, 64), h = Mathf.Clamp(rows, 1, 64);
             bool macro = routingStyle == RoutingStyle.SharedSockets;
-            var masks = PCBLayout.Generate(w, h, seed, traceCoverage, loopChance, straightBias);
+            var masks = PCBLayout.Generate(w, h, seed, connectEveryTile ? 1 : traceCoverage, loopChance, straightBias);
             PCBLayout.Validate(masks, w, h);
+            if(connectEveryTile && masks.Length>1)
+                foreach(int mask in masks)if(mask==0)throw new InvalidOperationException("An isolated PCB tile was generated.");
             var random = new System.Random(seed ^ 0x504342);
             // Validate the whole library before replacing the existing floor.
             var choices = new PCBTileLibrary.Entry[masks.Length];
@@ -101,6 +148,14 @@ namespace AAR.PCB
                     bool components = module && random.NextDouble() < componentDensity;
                     ApplyGroup(tile.transform, "Components", componentMaterial, componentHeight, components);
                     ApplyGroup(tile.transform, "Pins", pinMaterial, componentHeight, components);
+                    // Baked pads have no physical thickness. Unbaked pads support the
+                    // same board-anchored feet at the top of the tallest pad.
+                    float mountingHeight = bakeSurface ? 0 : .014f * traceRelief;
+                    foreach(string group in new[]{"Components","Pins"})
+                    {
+                        var mounted = tile.transform.Find(group);
+                        if(mounted) mounted.localPosition = new Vector3(0,mountingHeight,0);
+                    }
                     ApplyGroup(tile.transform, "Pads", pinMaterial, traceRelief, module);
                     ApplyGroup(tile.transform, "Markings", legendMaterial, 1, module);
                     if (macro)
@@ -113,7 +168,7 @@ namespace AAR.PCB
                             // Match the same junction definition used by the routed tile.
                             var junctionRandom=new System.Random(seed ^ (i*73856093));
                             var junction=center+new Vector2((float)junctionRandom.NextDouble()*2-1,(float)junctionRandom.NextDouble()*2-1)*size*junctionVariation;
-                            feeds.Add(new[]{new Vector2(p.x,p.z),junction});
+                            feeds.Add(PCBMacroRouting.FeedRoute(new Vector2(p.x,p.z),junction));
                         }
                     }
 #if UNITY_EDITOR
@@ -226,6 +281,7 @@ namespace AAR.PCB
 
         public void Clear()
         {
+            LastGlobalPlan=null;LastLayout=null;LastSurfaceTrianglesRemoved=0;
             if (!generatedRoot) return;
             if (Application.isPlaying)
             {

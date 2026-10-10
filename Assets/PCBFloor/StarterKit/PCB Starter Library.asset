@@ -22,7 +22,12 @@ MonoBehaviour:
   - {fileID: 7743798192900936786, guid: 8704373e8a65e4a8c98c881d25121f6c, type: 3}
   importedComponentVariation: 0.65
   importedHeightScale: 1
+  importedPassiveScale: 2.2
   controllerModules: 1
+  centralCompositionWeights: {x: 1, y: 1, z: 1, w: 1}
+  centralCapacitorScale: 1
+  centralRamCount: 3
+  centralComponentHeight: 1
   starterVariantCount: 12
   moduleVariationSeed: 1984
   chipPositionVariation: 0.13

@@ -20,17 +20,6 @@ using UnityEngine.UI;
 /// </summary>
 public class SettingsMenu : MonoBehaviour
 {
-    // ---------- Palette ----------
-    private static readonly Color Overlay   = new Color(0.02f, 0.03f, 0.04f, 0.72f);
-    private static readonly Color PanelCol  = new Color32(14, 17, 22, 245);
-    private static readonly Color Surface   = new Color32(24, 29, 37, 255);
-    private static readonly Color SurfaceHi = new Color32(34, 41, 52, 255);
-    private static readonly Color SurfacePr = new Color32(44, 53, 66, 255);
-    private static readonly Color Accent    = new Color32(60, 242, 163, 255);
-    private static readonly Color AccentDim = new Color32(60, 242, 163, 40);
-    private static readonly Color TextCol   = new Color32(230, 237, 243, 255);
-    private static readonly Color Muted     = new Color32(139, 148, 158, 255);
-    private static readonly Color Danger    = new Color32(255, 107, 107, 255);
     // Shared classic palette; the world keeps its own shader colors.
     private static readonly Color Overlay = new Color(0,0,0,.48f);
     private static readonly Color PanelCol = new Color32(192,192,192,255);
@@ -67,8 +56,6 @@ public class SettingsMenu : MonoBehaviour
     private bool blockPauseThisFrame;
 
     private GameObject root;
-    private GameObject commandsPage, gamePage;
-    private Button commandsTab, gameTab, resumeButton;
     private GameObject commandsPage, gamePage, displayPage;
     private Button commandsTab, gameTab, displayTab, resumeButton, resetButton;
     private TextMeshProUGUI statusText;
@@ -76,7 +63,6 @@ public class SettingsMenu : MonoBehaviour
     private InputActionRebindingExtensions.RebindingOperation rebindOp;
     private Action refreshGamePage;
 
-    private static Sprite rounded, circle;
     private Action refreshDisplayPage;
     private GlobalDitherController dither;
     private RectTransform window;
@@ -94,7 +80,6 @@ public class SettingsMenu : MonoBehaviour
         public string rowLabel;
         public Button button;
         public TextMeshProUGUI text;
-        public Image background;
     }
 
     /// <summary>Crée le menu s'il n'existe pas et le relie au joueur.</summary>
@@ -150,9 +135,6 @@ public class SettingsMenu : MonoBehaviour
         player.SetInputEnabled(false);
         RefreshBindings();
         refreshGamePage?.Invoke();
-        SetStatus("Clique sur une touche pour la modifier.  Échap annule.", Muted);
-        root.SetActive(true);
-        ShowPage(commandsPage.activeSelf);
         refreshDisplayPage?.Invoke();
         SetStatus("Clique sur une touche pour la modifier.  Échap annule.", Muted);
         root.SetActive(true);
@@ -177,81 +159,6 @@ public class SettingsMenu : MonoBehaviour
     // ==================================================================
     private void BuildUI()
     {
-        rounded = MakeRoundedSprite(64, 14);
-        circle = MakeRoundedSprite(64, 32);
-
-        var canvasGO = new GameObject("Canvas", typeof(RectTransform));
-        canvasGO.transform.SetParent(transform, false);
-        var canvas = canvasGO.AddComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 500;
-        var scaler = canvasGO.AddComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1920, 1080);
-        scaler.matchWidthOrHeight = 0.5f;
-        canvasGO.AddComponent<GraphicRaycaster>();
-        root = canvasGO;
-
-        // Fond assombri (bloque les clics vers le jeu)
-        var overlay = Rect("Overlay", canvasGO.transform);
-        Stretch(overlay);
-        overlay.gameObject.AddComponent<Image>().color = Overlay;
-
-        // Panneau principal
-        var panel = Rect("Panel", canvasGO.transform);
-        panel.anchorMin = panel.anchorMax = new Vector2(0.5f, 0.5f);
-        panel.sizeDelta = new Vector2(1040, 760);
-        AddImage(panel, PanelCol, rounded);
-        var v = panel.gameObject.AddComponent<VerticalLayoutGroup>();
-        v.padding = new RectOffset(40, 40, 36, 32);
-        v.spacing = 18;
-        v.childControlWidth = v.childControlHeight = true;
-        v.childForceExpandWidth = true;
-        v.childForceExpandHeight = false;
-
-        // Liseré d'accent en haut
-        var accentBar = Rect("AccentBar", panel);
-        accentBar.gameObject.AddComponent<LayoutElement>().ignoreLayout = true;
-        accentBar.anchorMin = new Vector2(0, 1); accentBar.anchorMax = new Vector2(1, 1);
-        accentBar.pivot = new Vector2(0.5f, 1);
-        accentBar.offsetMin = new Vector2(40, -4); accentBar.offsetMax = new Vector2(-40, 0);
-        AddImage(accentBar, Accent, rounded);
-
-        // En-tête
-        var header = Row("Header", panel, 48, 12);
-        var title = Label(header, "PARAMÈTRES", 38, TextCol, TextAlignmentOptions.MidlineLeft, FontStyles.Bold);
-        title.characterSpacing = 6;
-        Flexible(title.gameObject);
-        Label(header, "Échap pour reprendre", 18, Muted, TextAlignmentOptions.MidlineRight).gameObject
-            .AddComponent<LayoutElement>().preferredWidth = 260;
-
-        // Onglets
-        var tabs = Row("Tabs", panel, 46, 8);
-        commandsTab = MakeButton(tabs, "Commandes", () => ShowPage(true), false, 200);
-        gameTab = MakeButton(tabs, "Jeu", () => ShowPage(false), false, 200);
-        Flexible(Rect("Spacer", tabs).gameObject);
-
-        // Contenu
-        var content = Rect("Content", panel);
-        var contentLE = content.gameObject.AddComponent<LayoutElement>();
-        contentLE.flexibleHeight = 1;
-        contentLE.minHeight = 300;
-
-        commandsPage = BuildCommandsPage(content);
-        gamePage = BuildGamePage(content);
-
-        // Ligne d'état
-        statusText = Label(panel, "", 17, Muted, TextAlignmentOptions.MidlineLeft);
-        statusText.gameObject.AddComponent<LayoutElement>().preferredHeight = 24;
-
-        // Pied de page
-        var footer = Row("Footer", panel, 52, 12);
-        MakeButton(footer, "Réinitialiser les touches", ResetBindings, false, 280);
-        Flexible(Rect("Spacer", footer).gameObject);
-        MakeButton(footer, "Quitter le jeu", QuitGame, false, 200);
-        resumeButton = MakeButton(footer, "Reprendre", Close, true, 200);
-
-        ShowPage(true);
         dither=GlobalDitherController.Ensure();
         var canvasGO=new GameObject("Canvas",typeof(RectTransform));
         canvasGO.transform.SetParent(transform,false);
@@ -316,7 +223,6 @@ public class SettingsMenu : MonoBehaviour
         var page = Rect("CommandsPage", parent);
         Stretch(page);
         var v = page.gameObject.AddComponent<VerticalLayoutGroup>();
-        v.spacing = 10;
         v.spacing = 6;
         v.childControlWidth = v.childControlHeight = true;
         v.childForceExpandWidth = true;
@@ -326,37 +232,6 @@ public class SettingsMenu : MonoBehaviour
         var head = Row("ColumnHeader", page, 28, 12);
         head.GetComponent<HorizontalLayoutGroup>().padding = new RectOffset(20, 20, 0, 0);
         Flexible(Label(head, "ACTION", 15, Muted, TextAlignmentOptions.MidlineLeft, FontStyles.Bold).gameObject);
-        Fixed(Label(head, "CLAVIER / SOURIS", 15, Muted, TextAlignmentOptions.Center, FontStyles.Bold).gameObject, 260);
-        Fixed(Label(head, "MANETTE", 15, Muted, TextAlignmentOptions.Center, FontStyles.Bold).gameObject, 260);
-
-        // Zone défilante
-        var scroll = Rect("Scroll", page);
-        scroll.gameObject.AddComponent<LayoutElement>().flexibleHeight = 1;
-        var sr = scroll.gameObject.AddComponent<ScrollRect>();
-        sr.horizontal = false;
-        sr.movementType = ScrollRect.MovementType.Clamped;
-        sr.scrollSensitivity = 30;
-
-        var viewport = Rect("Viewport", scroll);
-        Stretch(viewport);
-        viewport.gameObject.AddComponent<RectMask2D>();
-        viewport.gameObject.AddComponent<Image>().color = Color.clear; // reçoit la molette
-
-        var list = Rect("List", viewport);
-        list.anchorMin = new Vector2(0, 1); list.anchorMax = new Vector2(1, 1);
-        list.pivot = new Vector2(0.5f, 1);
-        list.offsetMin = list.offsetMax = Vector2.zero;
-        var lv = list.gameObject.AddComponent<VerticalLayoutGroup>();
-        lv.spacing = 8;
-        lv.padding = new RectOffset(0, 8, 0, 4);
-        lv.childControlWidth = lv.childControlHeight = true;
-        lv.childForceExpandWidth = true;
-        lv.childForceExpandHeight = false;
-        list.gameObject.AddComponent<ContentSizeFitter>().verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-
-        sr.viewport = viewport;
-        sr.content = list;
-
         BindingColumn(Label(head, "CLAVIER / SOURIS", 16, Muted, TextAlignmentOptions.Center).gameObject);
         BindingColumn(Label(head, "MANETTE", 16, Muted, TextAlignmentOptions.Center).gameObject);
 
@@ -396,10 +271,6 @@ public class SettingsMenu : MonoBehaviour
 
     private void BindingRow(RectTransform list, string label, InputAction action, int kbIndex, int gpIndex)
     {
-        var row = Row(label, list, 56, 12);
-        row.GetComponent<HorizontalLayoutGroup>().padding = new RectOffset(20, 8, 6, 6);
-        AddImage(row, Surface, rounded);
-        Flexible(Label(row, label, 21, TextCol, TextAlignmentOptions.MidlineLeft).gameObject);
         var row = Row(label, list, 42, 8);
         row.GetComponent<HorizontalLayoutGroup>().padding = new RectOffset(8, 6, 5, 5);
         AddImage(row, Surface, null);
@@ -411,9 +282,6 @@ public class SettingsMenu : MonoBehaviour
     private void BindingButton(RectTransform row, string rowLabel, InputAction action, int index, string group)
     {
         var cell = new BindingCell { action = action, bindingIndex = index, group = group, rowLabel = rowLabel };
-        cell.button = MakeButton(row, "", () => StartRebind(cell), false, 260);
-        cell.text = cell.button.GetComponentInChildren<TextMeshProUGUI>();
-        cell.background = cell.button.GetComponent<Image>();
         cell.button = MakeButton(row, "", () => StartRebind(cell), false, 220);
         BindingColumn(cell.button.gameObject);
         cell.text = cell.button.GetComponentInChildren<TextMeshProUGUI>();
@@ -430,22 +298,6 @@ public class SettingsMenu : MonoBehaviour
     {
         var page = Rect("GamePage", parent);
         Stretch(page);
-        var v = page.gameObject.AddComponent<VerticalLayoutGroup>();
-        v.spacing = 10;
-        v.childControlWidth = v.childControlHeight = true;
-        v.childForceExpandWidth = true;
-        v.childForceExpandHeight = false;
-
-        var view = Segmented(SettingRow(page, "Vue"), new[] { "1re personne", "3e personne" },
-            i => player.SetViewMode(i == 0 ? PlayerController.ViewMode.FirstPerson : PlayerController.ViewMode.ThirdPerson));
-        var mouse = SliderControl(SettingRow(page, "Sensibilité souris"), 0.02f, 0.5f, "0.00",
-            x => player.MouseSensitivity = x);
-        var pad = SliderControl(SettingRow(page, "Sensibilité manette"), 30f, 400f, "0",
-            x => player.GamepadSensitivity = x);
-        var invert = Switch(SettingRow(page, "Inverser l'axe vertical"), b => player.InvertY = b);
-        var crouch = Segmented(SettingRow(page, "Accroupi"), new[] { "Maintenir", "Basculer" },
-            i => player.CrouchToggle = i == 1);
-        var fov = SliderControl(SettingRow(page, "Champ de vision"), 50f, 100f, "0°",
         var list=Scrollable(page);
 
         var view = Segmented(SettingRow(list, "Vue"), new[] { "1re personne", "3e personne" },
@@ -473,25 +325,6 @@ public class SettingsMenu : MonoBehaviour
         return page.gameObject;
     }
 
-    private void ShowPage(bool commands)
-    {
-        commandsPage.SetActive(commands);
-        gamePage.SetActive(!commands);
-        StyleTab(commandsTab, commands);
-        StyleTab(gameTab, !commands);
-    }
-
-    private static void StyleTab(Button tab, bool active)
-    {
-        var colors = tab.colors;
-        colors.normalColor = active ? AccentDim : Color.clear;
-        colors.highlightedColor = active ? AccentDim : SurfaceHi;
-        colors.selectedColor = colors.highlightedColor;
-        colors.pressedColor = SurfacePr;
-        tab.colors = colors;
-        var t = tab.GetComponentInChildren<TextMeshProUGUI>();
-        t.color = active ? Accent : Muted;
-        t.fontStyle = active ? FontStyles.Bold : FontStyles.Normal;
     private GameObject BuildDisplayPage(RectTransform parent)
     {
         var page=Rect("DisplayPage",parent);Stretch(page);var list=Scrollable(page);
@@ -732,167 +565,6 @@ public class SettingsMenu : MonoBehaviour
     // ==================================================================
     // Widgets
     // ==================================================================
-    private RectTransform SettingRow(RectTransform page, string label)
-    {
-        var row = Row(label, page, 64, 16);
-        row.GetComponent<HorizontalLayoutGroup>().padding = new RectOffset(22, 14, 8, 8);
-        AddImage(row, Surface, rounded);
-        Flexible(Label(row, label, 21, TextCol, TextAlignmentOptions.MidlineLeft).gameObject);
-        var control = Rect("Control", row);
-        Fixed(control.gameObject, 420);
-        return control;
-    }
-
-    /// <summary>Contrôle segmenté. Renvoie une fonction pour afficher la valeur sans déclencher l'action.</summary>
-    private Action<int> Segmented(RectTransform parent, string[] options, Action<int> onChange)
-    {
-        var h = parent.gameObject.AddComponent<HorizontalLayoutGroup>();
-        h.spacing = 6;
-        h.childControlWidth = h.childControlHeight = true;
-        h.childForceExpandWidth = h.childForceExpandHeight = true;
-
-        var buttons = new Button[options.Length];
-        Action<int> show = index =>
-        {
-            for (int i = 0; i < buttons.Length; i++)
-            {
-                bool on = i == index;
-                var c = buttons[i].colors;
-                c.normalColor = on ? Accent : SurfaceHi;
-                c.highlightedColor = on ? Accent : SurfacePr;
-                c.selectedColor = c.highlightedColor;
-                c.pressedColor = on ? Accent : SurfacePr;
-                buttons[i].colors = c;
-                var t = buttons[i].GetComponentInChildren<TextMeshProUGUI>();
-                t.color = on ? PanelCol : TextCol;
-                t.fontStyle = on ? FontStyles.Bold : FontStyles.Normal;
-            }
-        };
-        for (int i = 0; i < options.Length; i++)
-        {
-            int index = i;
-            buttons[i] = MakeButton(parent, options[i], () => { onChange(index); show(index); }, false, -1);
-        }
-        return show;
-    }
-
-    /// <summary>Interrupteur on/off. Renvoie une fonction pour afficher la valeur.</summary>
-    private Action<bool> Switch(RectTransform parent, Action<bool> onChange)
-    {
-        bool value = false;
-        var holder = Rect("Switch", parent);
-        holder.anchorMin = holder.anchorMax = new Vector2(1, 0.5f);
-        holder.pivot = new Vector2(1, 0.5f);
-        holder.sizeDelta = new Vector2(64, 34);
-        holder.anchoredPosition = Vector2.zero;
-        var bg = AddImage(holder, SurfacePr, circle);
-        var button = holder.gameObject.AddComponent<Button>();
-        button.targetGraphic = bg;
-        var colors = button.colors;
-        colors.highlightedColor = new Color(1.15f, 1.15f, 1.15f, 1f);
-        colors.colorMultiplier = 1.2f;
-        button.colors = colors;
-
-        var knob = Rect("Knob", holder);
-        knob.anchorMin = knob.anchorMax = new Vector2(0, 0.5f);
-        knob.sizeDelta = new Vector2(26, 26);
-        var knobImg = AddImage(knob, TextCol, circle);
-        knobImg.raycastTarget = false;
-
-        Action<bool> show = on =>
-        {
-            value = on;
-            bg.color = on ? Accent : SurfacePr;
-            knob.anchorMin = knob.anchorMax = new Vector2(on ? 1 : 0, 0.5f);
-            knob.anchoredPosition = new Vector2(on ? -17 : 17, 0);
-            knobImg.color = on ? PanelCol : TextCol;
-        };
-        button.onClick.AddListener(() => { show(!value); onChange(value); });
-        show(false);
-        return show;
-    }
-
-    /// <summary>Curseur avec valeur affichée. Renvoie une fonction pour afficher la valeur.</summary>
-    private Action<float> SliderControl(RectTransform parent, float min, float max, string format, Action<float> onChange)
-    {
-        var h = parent.gameObject.AddComponent<HorizontalLayoutGroup>();
-        h.spacing = 16;
-        h.childAlignment = TextAnchor.MiddleCenter;
-        h.childControlWidth = h.childControlHeight = true;
-        h.childForceExpandWidth = false;
-        h.childForceExpandHeight = true;
-
-        var sliderRT = Rect("Slider", parent);
-        Flexible(sliderRT.gameObject);
-        var slider = sliderRT.gameObject.AddComponent<Slider>();
-
-        var track = Rect("Track", sliderRT);
-        track.anchorMin = new Vector2(0, 0.5f); track.anchorMax = new Vector2(1, 0.5f);
-        track.sizeDelta = new Vector2(0, 8);
-        AddImage(track, SurfacePr, circle);
-
-        var fillArea = Rect("FillArea", sliderRT);
-        fillArea.anchorMin = new Vector2(0, 0.5f); fillArea.anchorMax = new Vector2(1, 0.5f);
-        fillArea.sizeDelta = new Vector2(0, 8);
-        var fill = Rect("Fill", fillArea);
-        fill.sizeDelta = Vector2.zero;
-        AddImage(fill, Accent, circle);
-
-        var handleArea = Rect("HandleArea", sliderRT);
-        handleArea.anchorMin = new Vector2(0, 0.5f); handleArea.anchorMax = new Vector2(1, 0.5f);
-        handleArea.sizeDelta = new Vector2(-22, 22);
-        var handle = Rect("Handle", handleArea);
-        handle.sizeDelta = new Vector2(22, 0);
-        var handleImg = AddImage(handle, TextCol, circle);
-
-        slider.fillRect = fill;
-        slider.handleRect = handle;
-        slider.targetGraphic = handleImg;
-        slider.direction = Slider.Direction.LeftToRight;
-        slider.minValue = min;
-        slider.maxValue = max;
-        var colors = slider.colors;
-        colors.highlightedColor = Accent;
-        colors.pressedColor = Accent;
-        colors.selectedColor = Accent;
-        slider.colors = colors;
-
-        var valueText = Label(parent, "", 19, Muted, TextAlignmentOptions.MidlineRight);
-        Fixed(valueText.gameObject, 70);
-
-        string Fmt(float x) => format.EndsWith("°") ? x.ToString(format.TrimEnd('°')) + "°" : x.ToString(format);
-        slider.onValueChanged.AddListener(x => { valueText.text = Fmt(x); onChange(x); });
-        return x => { slider.SetValueWithoutNotify(x); valueText.text = Fmt(x); };
-    }
-
-    private Button MakeButton(RectTransform parent, string text, UnityEngine.Events.UnityAction onClick, bool primary, float width)
-    {
-        var rt = Rect(text.Length > 0 ? text : "Button", parent);
-        var img = AddImage(rt, Color.white, rounded);
-        var b = rt.gameObject.AddComponent<Button>();
-        b.targetGraphic = img;
-        var c = b.colors;
-        c.normalColor = primary ? Accent : SurfaceHi;
-        c.highlightedColor = primary ? new Color32(110, 255, 192, 255) : SurfacePr;
-        c.selectedColor = c.highlightedColor;
-        c.pressedColor = primary ? new Color32(40, 200, 135, 255) : Surface;
-        c.disabledColor = new Color(1f, 1f, 1f, 0f);
-        c.fadeDuration = 0.08f;
-        b.colors = c;
-        b.onClick.AddListener(onClick);
-
-        var t = Label(rt, text, 20, primary ? PanelCol : TextCol, TextAlignmentOptions.Center,
-            primary ? FontStyles.Bold : FontStyles.Normal);
-        Stretch(t.rectTransform);
-        t.rectTransform.offsetMin = new Vector2(12, 0);
-        t.rectTransform.offsetMax = new Vector2(-12, 0);
-        t.enableAutoSizing = true;
-        t.fontSizeMin = 13;
-        t.fontSizeMax = 20;
-
-        if (width > 0) Fixed(rt.gameObject, width);
-        else Flexible(rt.gameObject);
-        return b;
     private RectTransform SettingRow(RectTransform page,string label)
     {
         var row=Row(label,page,48,12);row.GetComponent<HorizontalLayoutGroup>().padding=new RectOffset(8,8,6,6);
@@ -1023,7 +695,6 @@ public class SettingsMenu : MonoBehaviour
     {
         var img = rt.gameObject.AddComponent<Image>();
         img.sprite = sprite;
-        img.type = Image.Type.Sliced;
         img.type = Image.Type.Simple;
         img.color = color;
         return img;
@@ -1034,8 +705,6 @@ public class SettingsMenu : MonoBehaviour
     {
         var rt = Rect("Text", parent);
         var t = rt.gameObject.AddComponent<TextMeshProUGUI>();
-        t.text = text;
-        t.fontSize = size;
         t.font = Win98Style.Font;
         t.text = text;
         t.fontSize = 16;
@@ -1046,32 +715,6 @@ public class SettingsMenu : MonoBehaviour
         t.textWrappingMode = TextWrappingModes.NoWrap;
         t.overflowMode = TextOverflowModes.Ellipsis;
         return t;
-    }
-
-    /// <summary>Sprite blanc à coins arrondis, généré par code (9-slice).</summary>
-    internal static Sprite MakeRoundedSprite(int size, int radius)
-    {
-        var tex = new Texture2D(size, size, TextureFormat.RGBA32, false)
-        {
-            wrapMode = TextureWrapMode.Clamp,
-            filterMode = FilterMode.Bilinear,
-            name = "RoundedRect"
-        };
-        var px = new Color32[size * size];
-        for (int y = 0; y < size; y++)
-        for (int x = 0; x < size; x++)
-        {
-            float cx = Mathf.Clamp(x + 0.5f, radius, size - radius);
-            float cy = Mathf.Clamp(y + 0.5f, radius, size - radius);
-            float d = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(cx, cy));
-            byte a = (byte)(Mathf.Clamp01(radius - d + 0.5f) * 255f);
-            px[y * size + x] = new Color32(255, 255, 255, a);
-        }
-        tex.SetPixels32(px);
-        tex.Apply(false, true);
-        float border = Mathf.Min(radius, size / 2f - 1f);
-        return Sprite.Create(tex, new Rect(0, 0, size, size), new Vector2(0.5f, 0.5f), 100f, 0,
-            SpriteMeshType.FullRect, new Vector4(border, border, border, border));
     }
 
     private static void EnsureEventSystem()

@@ -85,8 +85,6 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
-<<<<<<< Updated upstream
-=======
                 },
                 {
                     "name": "ToggleView",
@@ -114,7 +112,7 @@
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
->>>>>>> Stashed changes
+
                 }
             ],
             "bindings": [
@@ -502,8 +500,6 @@
                     "action": "Crouch",
                     "isComposite": false,
                     "isPartOfComposite": false
-<<<<<<< Updated upstream
-=======
                 },
                 {
                     "name": "",
@@ -548,6 +544,7 @@
                     "action": "Pause",
                     "isComposite": false,
                     "isPartOfComposite": false
+
                 },
                 {
                     "name": "",
@@ -570,7 +567,6 @@
                     "action": "Flashlight",
                     "isComposite": false,
                     "isPartOfComposite": false
->>>>>>> Stashed changes
                 }
             ]
         },

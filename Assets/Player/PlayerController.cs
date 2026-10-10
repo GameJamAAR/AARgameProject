@@ -12,12 +12,11 @@ using UnityEngine.Rendering;
 ///   Jump  : Espace / A (Croix)
 ///   Crouch: C / B (Rond)
 ///   Sprint: Shift gauche / L3
-<<<<<<< Updated upstream
-=======
 ///   ToggleView : V / R3        (1re ⇄ 3e personne)
 ///   Pause      : Échap / Start (menu Paramètres, géré par SettingsMenu)
 ///   Flashlight : F / croix haut (lampe torche, gérée par PlayerFlashlight)
->>>>>>> Stashed changes
+///   ToggleView : V / R3        (1re ⇄ 3e personne)
+///   Pause      : Échap / Start (menu Paramètres, géré par SettingsMenu)
 ///
 /// Menu "AAR > Créer le joueur dans la scène" pour tout monter automatiquement.
 /// </summary>
@@ -42,6 +41,7 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private ViewMode viewMode = ViewMode.ThirdPerson;
     [SerializeField] private float mouseSensitivity = 0.1f;
     [SerializeField] private float gamepadSensitivity = 150f;
+    [SerializeField] private bool invertY = false;
     [SerializeField] private float minPitch = -70f;
     [SerializeField] private float maxPitch = 80f;
     [SerializeField] private float thirdPersonDistance = 3.5f;
@@ -78,14 +78,16 @@ public class PlayerController : MonoBehaviour
     // Entrées
     private InputActionMap playerMap;
     private InputAction moveAction, lookAction, jumpAction, crouchAction, sprintAction;
-<<<<<<< Updated upstream
     private bool ownsActions; // vrai si les actions ont été créées par code (pas d'asset)
-=======
     private InputAction toggleViewAction, pauseAction, flashlightAction;
     private bool ownsActions;       // vrai si la map a été créée par code (pas d'asset)
     private InputActionMap extraMap; // ToggleView/Pause créées par code si absentes de l'asset
     private bool inputEnabled = true;
->>>>>>> Stashed changes
+    private InputAction toggleViewAction, pauseAction;
+    private bool ownsActions;       // vrai si la map a été créée par code (pas d'asset)
+    private InputActionMap extraMap; // ToggleView/Pause créées par code si absentes de l'asset
+    private bool inputEnabled = true;
+
 
     // État
     private CharacterController controller;
@@ -106,13 +108,14 @@ public class PlayerController : MonoBehaviour
     public Vector3 Velocity => controller.velocity;
     public ViewMode CurrentViewMode => viewMode;
 
-<<<<<<< Updated upstream
-=======
     // ---------- Accès pour le menu Paramètres ----------
     public InputActionMap PlayerMap => playerMap;
     public InputAction PauseAction => pauseAction;
     public InputAction FlashlightAction => flashlightAction;
     public Transform CameraPivot => cameraPivot;
+    // ---------- Accès pour le menu Paramètres ----------
+    public InputActionMap PlayerMap => playerMap;
+    public InputAction PauseAction => pauseAction;
     public bool InputEnabled => inputEnabled;
 
     public float MouseSensitivity
@@ -141,7 +144,6 @@ public class PlayerController : MonoBehaviour
         set { if (playerCamera != null) playerCamera.fieldOfView = value; GameSettings.SetFloat("FieldOfView", value); }
     }
 
->>>>>>> Stashed changes
     private void Awake()
     {
         controller = GetComponent<CharacterController>();
@@ -165,15 +167,17 @@ public class PlayerController : MonoBehaviour
         if (animator == null) animator = GetComponentInChildren<Animator>();
 
         yaw = transform.eulerAngles.y;
+        LoadSettings();
         SetupInput();
         ApplyViewMode();
-<<<<<<< Updated upstream
-=======
 
         // Menu Paramètres (Échap), lampe torche (F) et brouillard, créés automatiquement s'ils manquent
         SettingsMenu.Ensure(this);
         if (!TryGetComponent(out PlayerFlashlight _)) gameObject.AddComponent<PlayerFlashlight>();
         AtmosphereFog.Ensure();
+
+        // Menu Paramètres (Échap), créé automatiquement s'il n'existe pas
+        SettingsMenu.Ensure(this);
     }
 
     private void LoadSettings()
@@ -185,7 +189,6 @@ public class PlayerController : MonoBehaviour
         viewMode = (ViewMode)GameSettings.GetInt("ViewMode", (int)viewMode);
         if (playerCamera != null)
             playerCamera.fieldOfView = GameSettings.GetFloat("FieldOfView", playerCamera.fieldOfView);
->>>>>>> Stashed changes
     }
 
     // ---------- Entrées ----------
@@ -201,17 +204,20 @@ public class PlayerController : MonoBehaviour
                 jumpAction = playerMap.FindAction("Jump");
                 crouchAction = playerMap.FindAction("Crouch");
                 sprintAction = playerMap.FindAction("Sprint");
-<<<<<<< Updated upstream
-=======
                 toggleViewAction = playerMap.FindAction("ToggleView");
                 pauseAction = playerMap.FindAction("Pause");
                 flashlightAction = playerMap.FindAction("Flashlight");
->>>>>>> Stashed changes
+                toggleViewAction = playerMap.FindAction("ToggleView");
+                pauseAction = playerMap.FindAction("Pause");
             }
         }
 
         if (moveAction != null && lookAction != null && jumpAction != null && crouchAction != null && sprintAction != null)
+        {
+            CreateMissingExtraActions();
+            GameSettings.LoadBindings(playerMap);
             return;
+        }
 
         // Secours si l'asset n'est pas assigné : mêmes touches, créées par code.
         Debug.LogWarning("[PlayerController] InputSystem_Actions non assigné : utilisation des touches par défaut.", this);
@@ -243,8 +249,6 @@ public class PlayerController : MonoBehaviour
         sprintAction = playerMap.AddAction("Sprint", InputActionType.Button);
         sprintAction.AddBinding("<Keyboard>/leftShift");
         sprintAction.AddBinding("<Gamepad>/leftStickPress");
-<<<<<<< Updated upstream
-=======
 
         toggleViewAction = playerMap.AddAction("ToggleView", InputActionType.Button);
         toggleViewAction.AddBinding("<Keyboard>/v").WithGroup("Keyboard&Mouse");
@@ -265,6 +269,7 @@ public class PlayerController : MonoBehaviour
     private void CreateMissingExtraActions()
     {
         if (toggleViewAction != null && pauseAction != null && flashlightAction != null) return;
+        if (toggleViewAction != null && pauseAction != null) return;
         extraMap = new InputActionMap("PlayerExtra");
         if (toggleViewAction == null)
         {
@@ -284,19 +289,17 @@ public class PlayerController : MonoBehaviour
             flashlightAction.AddBinding("<Keyboard>/f");
             flashlightAction.AddBinding("<Gamepad>/dpad/up");
         }
->>>>>>> Stashed changes
     }
 
     private void OnEnable()
     {
-        playerMap?.Enable();
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
+        SetInputEnabled(inputEnabled);
     }
 
     private void OnDisable()
     {
         playerMap?.Disable();
+        extraMap?.Disable();
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
     }
@@ -304,20 +307,47 @@ public class PlayerController : MonoBehaviour
     private void OnDestroy()
     {
         if (ownsActions) playerMap?.Dispose();
+        extraMap?.Dispose();
+    }
+
+    /// <summary>
+    /// Active/désactive les commandes du joueur (utilisé par le menu Paramètres).
+    /// L'action Pause reste active pour pouvoir refermer le menu.
+    /// </summary>
+    public void SetInputEnabled(bool enabled)
+    {
+        inputEnabled = enabled;
+        if (enabled)
+        {
+            playerMap?.Enable();
+            extraMap?.Enable();
+            Cursor.lockState = CursorLockMode.Locked;
+            Cursor.visible = false;
+        }
+        else
+        {
+            playerMap?.Disable();
+            extraMap?.Disable();
+            pauseAction?.Enable();
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
+        }
     }
 
     private void Update()
     {
-        // Échap libère la souris, un clic la reprend (pratique dans l'éditeur)
-        if (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+        if (inputEnabled)
         {
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
-        }
-        else if (Cursor.lockState != CursorLockMode.Locked && Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
-        {
-            Cursor.lockState = CursorLockMode.Locked;
-            Cursor.visible = false;
+            // Si la souris a été libérée (Alt-Tab…), un clic la reprend
+            if (Cursor.lockState != CursorLockMode.Locked && Mouse.current != null && Mouse.current.leftButton.wasPressedThisFrame)
+            {
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
+            }
+
+            // Bascule 1re ⇄ 3e personne
+            if (toggleViewAction != null && toggleViewAction.WasPressedThisFrame())
+                SetViewMode(viewMode == ViewMode.FirstPerson ? ViewMode.ThirdPerson : ViewMode.FirstPerson);
         }
 
         HandleLook();
@@ -334,13 +364,14 @@ public class PlayerController : MonoBehaviour
     // ---------- Regard ----------
     private void HandleLook()
     {
+        if (!inputEnabled) return;
         if (Cursor.lockState != CursorLockMode.Locked && !IsGamepadActive(lookAction)) return;
 
         Vector2 look = lookAction.ReadValue<Vector2>();
         float sens = IsGamepadActive(lookAction) ? gamepadSensitivity * Time.deltaTime : mouseSensitivity;
 
         yaw += look.x * sens;
-        pitch = Mathf.Clamp(pitch - look.y * sens, minPitch, maxPitch);
+        pitch = Mathf.Clamp(pitch - look.y * sens * (invertY ? -1f : 1f), minPitch, maxPitch);
 
         // En 1re personne, le corps suit la caméra horizontalement
         if (viewMode == ViewMode.FirstPerson)
@@ -476,13 +507,25 @@ public class PlayerController : MonoBehaviour
     public void SetViewMode(ViewMode mode)
     {
         viewMode = mode;
+        GameSettings.SetInt("ViewMode", (int)mode);
         ApplyViewMode();
     }
 
     private void ApplyViewMode()
     {
-        if (model != null && viewMode == ViewMode.FirstPerson)
+        if (viewMode == ViewMode.FirstPerson)
+        {
+            // Le corps s'aligne sur le regard
             transform.rotation = Quaternion.Euler(0f, yaw, 0f);
+            if (model != null) model.localRotation = Quaternion.identity;
+        }
+        else if (model != null)
+        {
+            // Le modèle garde l'orientation qu'il avait (tourné en espace monde par HandleMovement)
+            Quaternion keep = model.rotation;
+            transform.rotation = Quaternion.identity;
+            model.rotation = keep;
+        }
 
         // En 1re personne on cache le modèle mais on garde son ombre
         if (modelRenderers == null) return;

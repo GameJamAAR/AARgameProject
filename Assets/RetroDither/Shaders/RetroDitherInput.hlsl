@@ -42,6 +42,7 @@ CBUFFER_START(UnityPerMaterial)
     float4 _LightColor;
     float4 _HighlightColor;
     float _DitherStrength;
+    float _DitherOverrides;
     float _PixelSize;
     float _PatternScaleMode;
     float _PatternSize;
@@ -76,6 +77,16 @@ CBUFFER_START(UnityPerMaterial)
     float4 _PCBLegendColor;
 CBUFFER_END
 
+// Zero enabled flag restores the material's original values when no owner exists.
+float4 _RetroDitherSharedGrid;   // pixels, strength, Bayer size, enabled
+float4 _RetroDitherSharedSizing; // sizing mode, reference height
+float4 _RetroDitherSharedFilter; // detail, cell lighting, crisp mode, specular AA
+float RetroSharedDither(float localValue,float sharedValue,int group)
+{
+    return _RetroDitherSharedGrid.w>0.5 && (((int)_DitherOverrides & group)==0)
+        ? sharedValue : localValue;
+}
+
 RetroPalette RetroGetPalette()
 {
     RetroPalette palette;
@@ -89,10 +100,10 @@ RetroPalette RetroGetPalette()
 RetroDitherSettings RetroGetSettings()
 {
     RetroDitherSettings settings;
-    settings.strength = _DitherStrength;
+    settings.strength = RetroSharedDither(_DitherStrength,_RetroDitherSharedGrid.y,2);
     settings.contrast = _Contrast;
     settings.brightness = _Brightness;
-    settings.patternSize = _PatternSize;
+    settings.patternSize = RetroSharedDither(_PatternSize,_RetroDitherSharedGrid.z,4);
     settings.normalizePalette = _NormalizePalette;
     return settings;
 }
@@ -153,7 +164,7 @@ float3 RetroPCBComposite(float3 copper, float3 mask, float2 pixel, float3 positi
 {
     if (_PCBBaked < 0.5) return copper;
     float shadow = saturate((1-shadowAttenuation)*_ShadowOpacity);
-    float threshold = lerp(0.5,RetroBayer(pixel,_PatternSize),saturate(_DitherStrength));
+    float threshold = lerp(0.5,RetroBayer(pixel,RetroSharedDither(_PatternSize,_RetroDitherSharedGrid.z,4)),saturate(RetroSharedDither(_DitherStrength,_RetroDitherSharedGrid.y,2)));
     float3 board = RetroGroundColor(step(threshold,shadow),positionWS);
     float coverage = saturate(mask.r+mask.g);
     return lerp(lerp(board,copper,coverage),_PCBLegendColor.rgb,saturate(mask.b));

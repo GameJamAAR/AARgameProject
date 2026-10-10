@@ -35796,7 +35796,7 @@ MonoBehaviour:
   library: {fileID: 11400000, guid: 05d3e2fbbb1044c31935512423750d8d, type: 2}
   routingStyle: 2
   connectEveryTile: 1
-  globalBoardSize: {x: 64.8, y: 54}
+  globalBoardSize: {x: 150, y: 150}
   globalChunkSize: 10.8
   globalGroupCount: 24
   globalPartsPerGroup: 16

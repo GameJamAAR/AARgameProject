@@ -3,12 +3,20 @@ using UnityEngine;
 
 namespace AAR.RetroDither.Editor
 {
-    /// <summary>Material authoring only; no runtime component or global shader state.</summary>
+    /// <summary>Material-specific controls and explicit exceptions to the shared profile.</summary>
     public sealed class RetroDitherShaderGUI : ShaderGUI
     {
         public override void OnGUI(MaterialEditor editor, MaterialProperty[] properties)
         {
             EditorGUILayout.LabelField("RETRO / DITHER", EditorStyles.boldLabel);
+            var overrides=FindProperty("_DitherOverrides",properties);
+            EditorGUI.showMixedValue=overrides.hasMixedValue;
+            EditorGUI.BeginChangeCheck();
+            int mask=EditorGUILayout.MaskField("Keep local controls",(int)overrides.floatValue,new[]{"Pixel size / sizing","Strength","Bayer matrix","Filtering"});
+            if(EditorGUI.EndChangeCheck()){editor.RegisterPropertyChangeUndo("Local dither overrides");overrides.floatValue=mask&15;}
+            EditorGUI.showMixedValue=false;
+            EditorGUILayout.HelpBox("Shared Dither Settings controls the pattern across the scene. Checked groups keep this material's own values. Palette, lighting, UV coordinates, PCB maps and shadow behavior always stay local.",MessageType.None);
+            if(GUILayout.Button("Open shared dither settings"))Selection.activeObject=UnityEngine.Resources.Load<GlobalDitherProfile>("RetroDither/Global Settings");
             Draw(editor, properties, "_ShadowOnly");
             if (FindProperty("_ShadowOnly", properties).floatValue > 0.5f)
             {

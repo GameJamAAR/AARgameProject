@@ -5,7 +5,7 @@ namespace AAR.RetroUI
 {
     // Resolution-independent geometry, with two crisp nested bevels and no textures.
     [RequireComponent(typeof(CanvasRenderer))]
-    public sealed class Win98Bevel : UnityEngine.UI.Graphic, IPointerDownHandler, IPointerUpHandler,
+    public sealed class Win98Bevel : UnityEngine.UI.MaskableGraphic, IPointerDownHandler, IPointerUpHandler,
         IPointerEnterHandler, IPointerExitHandler, ISelectHandler, IDeselectHandler
     {
         public Color face = new Color32(192,192,192,255);

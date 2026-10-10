@@ -38,7 +38,7 @@ Material:
     - _ScanlineStrength: 0.213
     - _ScanlineWidth: 0.3
     - _VignetteSoftness: 0.6
-    - _VignetteStrength: 0
+    - _VignetteStrength: 0.018
     - _Zoom: 1
     m_Colors:
     - _BorderColor: {r: 0.005, g: 0.005, b: 0.008, a: 1}

@@ -15,6 +15,7 @@ Shader "AAR/Retro Dither"
         _LightColor ("03 / Light", Color) = (0.95,0.37,0.40,1)
         _HighlightColor ("04 / Highlight", Color) = (1,0.91,0.67,1)
         _DitherStrength ("Dither Strength", Range(0,1)) = 1
+        [HideInInspector] _DitherOverrides ("Local Dither Overrides", Float) = 0
         _PixelSize ("Pattern Pixel Size", Range(1,12)) = 3
         [Enum(OutputPixels,0,ReferenceHeight,1)] _PatternScaleMode ("Screen Pattern Sizing", Float) = 1
         [Enum(Bayer2,2,Bayer4,4,Bayer8,8)] _PatternSize ("Bayer Matrix", Float) = 4
@@ -107,7 +108,7 @@ Shader "AAR/Retro Dither"
                 float diffuse = saturate((dot(normal, light.direction) + _LightWrap) / (1.0 + _LightWrap));
                 float3 halfway = SafeNormalize(light.direction + view);
                 float exponent = max(_Shininess, 1.0);
-                float filteredExponent = exponent / (1.0 + _SpecularAA * normalVariance * exponent);
+                float filteredExponent = exponent / (1.0 + RetroSharedDither(_SpecularAA,_RetroDitherSharedFilter.w,8) * normalVariance * exponent);
                 float specular = pow(saturate(dot(normal, halfway)), filteredExponent)
                     * (filteredExponent / exponent) * specularStrength * diffuse;
                 return (diffuse + specular) * RetroLuminance(light.color)
@@ -117,6 +118,14 @@ Shader "AAR/Retro Dither"
             {
                 UNITY_SETUP_INSTANCE_ID(input);
                 UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+                float pixelSize=RetroSharedDither(_PixelSize,_RetroDitherSharedGrid.x,1);
+                float scaleMode=RetroSharedDither(_PatternScaleMode,_RetroDitherSharedSizing.x,1);
+                float referenceHeight=RetroSharedDither(_ReferenceHeight,_RetroDitherSharedSizing.y,1);
+                float strength=RetroSharedDither(_DitherStrength,_RetroDitherSharedGrid.y,2);
+                float bayerSize=RetroSharedDither(_PatternSize,_RetroDitherSharedGrid.z,4);
+                float detailStability=RetroSharedDither(_DetailStability,_RetroDitherSharedFilter.x,8);
+                float cellLighting=RetroSharedDither(_CellLighting,_RetroDitherSharedFilter.y,8);
+                float preserveDither=RetroSharedDither(_PreserveDither,_RetroDitherSharedFilter.z,8);
                 float3 normal = normalize(input.normalWS);
                 float3 pcbMask = 0;
                 if (_PCBBaked > 0.5 && input.topFace > 0.5)
@@ -142,12 +151,12 @@ Shader "AAR/Retro Dither"
                     float shadow = saturate((1.0 - mainLight.shadowAttenuation) * _ShadowOpacity);
                     // OutputPixels measures cells in final target pixels. ReferenceHeight
                     // deliberately scales their size; neither mode depends on render scale.
-                    float cellPixels = max(round(_PixelSize * (_PatternScaleMode > 0.5 ? RetroDitherOutputDimensions().y / max(_ReferenceHeight, 1.0) : 1.0)), 1.0);
+                    float cellPixels = max(round(pixelSize * (scaleMode > 0.5 ? RetroDitherOutputDimensions().y / max(referenceHeight, 1.0) : 1.0)), 1.0);
                     float2 groundPixel = _PatternSpace < 0.5
                         ? RetroDitherScreenCoordinates(input.positionCS.xy) / cellPixels
-                        : input.uv * _UVDensity / max(round(_PixelSize), 1.0);
+                        : input.uv * _UVDensity / max(round(pixelSize), 1.0);
                     groundPixel += _PatternOffset.xy;
-                    float threshold = lerp(0.5, RetroBayer(groundPixel, _PatternSize), saturate(_DitherStrength));
+                    float threshold = lerp(0.5, RetroBayer(groundPixel, bayerSize), saturate(strength));
                     float coverage = step(threshold, shadow);
                     return half4(RetroGroundColor(coverage, input.positionWS), 1);
                 }
@@ -175,21 +184,21 @@ Shader "AAR/Retro Dither"
                 float3 albedo = SAMPLE_TEXTURE2D(_BaseMap, sampler_BaseMap, textureUV).rgb * _BaseColor.rgb;
                 energy *= RetroLuminance(albedo);
                 energy += pow(1.0 - saturate(dot(normal, view)), _RimPower) * _RimStrength
-                    / (1.0 + normalVariance * _DetailStability * 8.0);
+                    / (1.0 + normalVariance * detailStability * 8.0);
                 float tone = 1.0 - exp2(-max(energy, 0.0) * _Exposure);
                 tone += pcbMask.g * (_PCBContactBrightness-_Brightness) / max(_Contrast,.01);
-                float cellPixels = max(round(_PixelSize * (_PatternScaleMode > 0.5 ? RetroDitherOutputDimensions().y / max(_ReferenceHeight, 1.0) : 1.0)), 1.0);
+                float cellPixels = max(round(pixelSize * (scaleMode > 0.5 ? RetroDitherOutputDimensions().y / max(referenceHeight, 1.0) : 1.0)), 1.0);
                 float2 patternPixel = _PatternSpace < 0.5
                     ? RetroDitherScreenCoordinates(input.positionCS.xy) / cellPixels
-                    : input.uv * _UVDensity / max(round(_PixelSize), 1.0);
+                    : input.uv * _UVDensity / max(round(pixelSize), 1.0);
                 patternPixel += _PatternOffset.xy;
                 float footprint = max(length(ddx(patternPixel)), length(ddy(patternPixel)));
                 float patternVisibility = 1.0 - smoothstep(0.5, 1.5, footprint);
-                float filterWidth = min(0.49, fwidth(tone) * max(_Contrast, 0.01) * 3.0 * _DetailStability);
+                float filterWidth = min(0.49, fwidth(tone) * max(_Contrast, 0.01) * 3.0 * detailStability);
                 float distanceToCamera = length(GetWorldSpaceViewDir(input.positionWS));
                 float distanceFade = smoothstep(max(_FadeStart, 0.0), max(_FadeEnd, _FadeStart + 0.01), distanceToCamera)
                     * _DistanceFade;
-                if (_PreserveDither > 0.5)
+                if (preserveDither > 0.5)
                 {
                     if (_PatternSpace < 0.5)
                     {
@@ -211,7 +220,7 @@ Shader "AAR/Retro Dither"
                         float change = dot(gradient, offset);
                         float slope = abs(gradient.x) + abs(gradient.y);
                         float edgeGuard = 1.0 - smoothstep(0.03, 0.15, slope);
-                        float stability = saturate(_CellLighting + distanceFade * (1.0 - _CellLighting));
+                        float stability = saturate(cellLighting + distanceFade * (1.0 - cellLighting));
                         tone = saturate(tone + clamp(change, -0.08, 0.08) * stability * edgeGuard);
                         // Keep Bayer thresholds binary, including on distant geometry.
                         return half4(RetroPCBComposite(RetroLookColor(tone, patternPixel, 0.0, 1.0, 0.0, input.positionWS),pcbMask,patternPixel,input.positionWS,mainLight.shadowAttenuation), 1);
